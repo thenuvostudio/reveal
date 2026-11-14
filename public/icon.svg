@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22a194"/><stop offset=".55" stop-color="#2f6fb0"/><stop offset="1" stop-color="#6a45b8"/></linearGradient>
+    <radialGradient id="glow" cx=".3" cy=".22" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b4f27a"/><stop offset=".55" stop-color="#5fd07a"/><stop offset="1" stop-color="#21a38a"/></linearGradient>
+    <linearGradient id="tail" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4cc27c"/><stop offset="1" stop-color="#1d8f86"/></linearGradient>
+    <radialGradient id="eyeball" cx=".38" cy=".35" r=".7"><stop offset="0" stop-color="#d9ff9e"/><stop offset="1" stop-color="#57c46f"/></radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="116" fill="url(#glow)"/>
+  <!-- branch -->
+  <path d="M58 404 C 160 384, 300 392, 456 362" stroke="#7a4b2a" stroke-width="24" stroke-linecap="round" fill="none"/>
+  <path d="M380 374 q 22 -26 52 -30" stroke="#7a4b2a" stroke-width="12" stroke-linecap="round" fill="none"/>
+  <ellipse cx="438" cy="338" rx="20" ry="11" transform="rotate(-25 438 338)" fill="#8be08a"/>
+  <!-- tail spiral -->
+  <path d="M318 300 C 392 292, 428 338, 414 382 C 402 420, 352 428, 336 400 C 322 376, 342 352, 364 360 C 380 366, 378 386, 364 388"
+        stroke="url(#tail)" stroke-width="30" stroke-linecap="round" fill="none"/>
+  <!-- body -->
+  <ellipse cx="252" cy="300" rx="118" ry="80" transform="rotate(-10 252 300)" fill="url(#skin)"/>
+  <!-- back crest -->
+  <path d="M176 232 q 16 -18 32 -4 q 16 -18 32 -4 q 16 -16 32 -2 q 16 -14 30 2" stroke="#2fae78" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- legs -->
+  <path d="M196 352 C 196 372, 186 384, 176 392" stroke="#3cb878" stroke-width="24" stroke-linecap="round" fill="none"/>
+  <path d="M300 350 C 306 370, 312 380, 322 388" stroke="#2fa978" stroke-width="24" stroke-linecap="round" fill="none"/>
+  <!-- head -->
+  <path d="M86 268 C 84 214, 126 174, 182 176 C 214 178, 238 200, 244 232 C 252 280, 220 320, 168 322 C 120 324, 88 302, 86 268 Z" fill="url(#skin)"/>
+  <path d="M116 200 C 126 160, 176 142, 216 172 C 196 176, 150 180, 116 200 Z" fill="#43bd78"/>
+  <!-- spots -->
+  <circle cx="262" cy="276" r="13" fill="#d6ff9c" opacity=".7"/><circle cx="300" cy="306" r="9" fill="#d6ff9c" opacity=".6"/><circle cx="226" cy="318" r="8" fill="#d6ff9c" opacity=".6"/><circle cx="328" cy="268" r="7" fill="#d6ff9c" opacity=".55"/>
+  <!-- eye turret -->
+  <circle cx="170" cy="236" r="44" fill="url(#eyeball)" stroke="#2fae78" stroke-width="5"/>
+  <circle cx="166" cy="232" r="24" fill="#fff"/>
+  <circle cx="160" cy="228" r="13" fill="#1d2b2a"/>
+  <circle cx="155" cy="222" r="5" fill="#fff"/>
+  <!-- smile + blush -->
+  <path d="M96 286 C 112 300, 136 304, 156 296" stroke="#1d5a45" stroke-width="6" stroke-linecap="round" fill="none"/>
+  <ellipse cx="190" cy="290" rx="16" ry="9" fill="#ff8fb1" opacity=".75"/>
+  <circle cx="98" cy="262" r="4" fill="#1d5a45"/>
+</svg>

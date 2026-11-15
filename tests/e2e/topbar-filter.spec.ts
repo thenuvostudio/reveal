@@ -268,8 +268,8 @@ test.describe("filter", () => {
     await page.click("#sclear");
     await page.locator("#search").blur();
     await openRuler(page);
-    expect(await rulerLabels(page)).toEqual(["🎲 隨機 Random", "全部 All", "自我成長", "峰與谷", "#x"]);
-    await expect(page.locator("#tape .tick.random .ct").first()).toHaveText("35");
+    expect(await rulerLabels(page)).toEqual(["自我成長", "峰與谷", "#x"]);
+    await expect(page.locator("#tape .tick.folder .ct").first()).toHaveText("35");
     await expect(page.locator("#tape .tick.tag .ct").first()).toHaveText("2");
   });
 

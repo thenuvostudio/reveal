@@ -136,5 +136,6 @@ The first two behave the same in the HTML version.
 ## Differences from the HTML version
 
 - **Name.** The app is called Reveal. Backups download as `reveal-backup-<date>.json` and a newly linked file is suggested as `reveal-library.json`. Two internal names are kept on purpose so existing data keeps working: the IndexedDB database `readmoo-highlights` and the `app: "readmoo-highlights"` field inside backup files.
+- **The ruler lists only folders, books and tags.** Random and All are not on it; use the dice and the All button in the top bar. While the random mix, All or a search is showing, the needle rests on an item without loading it; scroll to another item, or click the one under the needle, to open it.
 
 - **Touch screens: tapping the bookmark tab opens the ruler.** In the HTML version a tap opened the ruler and closed it again at once, because the browser reports a tap as "mouse enters, click, mouse leaves". Here only a real mouse opens the ruler by hovering; a finger's tap toggles it.

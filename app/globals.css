@@ -190,7 +190,7 @@ mark.q{background:rgba(255,232,120,.88)!important;color:#1c1917!important;border
 .tick .ct{font-size:11px;opacity:.5}
 .tick.folder::before{height:46px;width:2px;background:#fff}
 .tick.folder.sub::before{height:38px}
-.tick.folder .lb,.tick.all .lb,.tick.random .lb{font-family:var(--sans);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;opacity:.85}
+.tick.folder .lb{font-family:var(--sans);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;opacity:.85}
 .tick.folder .sw{width:14px;height:14px;border-radius:4px}
 .tick.tag .lb{font-family:var(--sans);font-size:13px}
 .tick.cur .lb{opacity:1;font-weight:700;text-shadow:0 0 14px rgba(255,255,255,.55)}.tick.cur .ct{opacity:.95}

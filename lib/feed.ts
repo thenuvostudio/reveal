@@ -108,18 +108,16 @@ export function modeValid(lib: Library, m: Mode, filter: Filter): boolean {
   return true;
 }
 
-export interface RulerItem { type: "random" | "all" | "folder" | "book" | "tag"; id: string | null; label: string; count: number; depth?: number; cls?: string; sw?: string }
+export interface RulerItem { type: "folder" | "book" | "tag"; id: string | null; label: string; count: number; depth?: number; cls?: string; sw?: string }
 
-/** Ruler entries: Random, All, folders with their books (tree order), top-level books, tags — all within the filter. */
+/** Ruler entries: folders with their books (tree order), top-level books, tags — all within the filter.
+ *  (Random and All are not on the ruler; they have their own buttons in the top bar.) */
 export function rulerItems(lib: Library, filter: Filter): RulerItem[] {
   const hs = scopedHighlights(lib, filter), on = filterActive(filter);
   const counts = new Map<string, number>();
   hs.forEach((h) => counts.set(h.bookId, (counts.get(h.bookId) || 0) + 1));
   const keep = (n: number) => !on || n > 0;
-  const items: RulerItem[] = [
-    { type: "random", id: null, label: "🎲 隨機 Random", count: hs.length, sw: "linear-gradient(90deg,#ff8fb1,#ffd36e,#7ee081,#6ec3ff,#b48cff)" },
-    { type: "all", id: null, label: "全部 All", count: hs.length, sw: "linear-gradient(90deg,#fff,#fff)" },
-  ];
+  const items: RulerItem[] = [];
   (function walk(pid: string | null, d: number) {
     childFolders(lib, pid).forEach((f) => {
       const fc = booksUnder(lib, f.id).reduce((n, b) => n + (counts.get(b.id) || 0), 0);

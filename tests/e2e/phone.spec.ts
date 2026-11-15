@@ -138,7 +138,7 @@ test.describe("phone: ruler", () => {
     await expect(ruler(page)).not.toHaveClass(/open/);
     await page.tap("#bm");
     await expect(ruler(page)).toHaveClass(/open/);
-    await expect(cur(page)).toHaveText("🎲 隨機 Random");
+    await expect(cur(page)).toHaveText((await rulerLabels(page))[0]);
     await page.waitForTimeout(400);
     await expect(ruler(page)).toHaveClass(/open/); // it stays open
     await page.tap("#bm");
@@ -154,11 +154,11 @@ test.describe("phone: ruler", () => {
     const labels = await rulerLabels(page);
     await page.locator("#tape .tick.cur + .tick").tap();
     await expect(cur(page)).toHaveText(labels[1]);
-    await expect.poll(() => state<string>(page, "s => s.mode.type")).toBe("all");
+    await expect.poll(() => modeLabel(page)).toBe(labels[1]);
     await expect(ruler(page)).toHaveClass(/open/);
     await page.locator("#tape .tick.cur").tap();
     await expect(ruler(page)).not.toHaveClass(/open/);
-    await expect(page.locator("#allBtn")).toHaveClass(/on/);
+    await expect(page.locator("#diceBtn")).not.toHaveClass(/on/);
   });
 
   test("swiping the ruler moves the needle and loads where it stops", async ({ page }) => {

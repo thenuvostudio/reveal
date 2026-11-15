@@ -1,7 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
-import { dialog, expectPage, modeLabel, open, openLibrary, openRuler, rulerLabel, rulerLabels, seed, state, toast } from "./helpers";
+import { dialog, expectPage, goTo, modeLabel, open, openLibrary, openRuler, rulerLabel, rulerLabels, seed, state, toast } from "./helpers";
 
-const RANDOM = "🎲 隨機 Random", ALL = "全部 All";
 const ruler = (page: Page) => page.locator("#ruler");
 const isOpen = (page: Page) => expect(ruler(page)).toHaveClass(/open/);
 const isClosed = (page: Page) => expect(ruler(page)).not.toHaveClass(/open/);
@@ -19,18 +18,19 @@ const modes = (page: Page) => page.evaluate(() => (window as unknown as { __mode
 const wheel = (page: Page, notches = 1) => page.mouse.wheel(0, 60 * notches);
 
 test.describe("ruler contents", () => {
-  test("lists Random, All, folders with their books, loose books and tags, with counts", async ({ page }) => {
+  test("lists folders with their books, loose books and tags, with counts; Random and All are not on it", async ({ page }) => {
     await seed(page);
     await openRuler(page);
     const labels = await rulerLabels(page);
-    expect(labels.slice(0, 2)).toEqual([RANDOM, ALL]);
+    expect(labels).toHaveLength(7);
+    expect([...labels].sort()).toEqual(["#x", "#y", "Book C", "串流媒體", "商業與媒體", "峰與谷", "自我成長"].sort());
     expect(labels.slice(-3)).toEqual(["Book C", "#x", "#y"]);
-    expect(labels).toHaveLength(9);
+    expect(labels.some((l) => /random|all|隨機|全部/i.test(l))).toBe(false);
+    await expect(page.locator("#tape .tick.random, #tape .tick.all")).toHaveCount(0);
     // each folder is followed by its book
     expect(labels[labels.indexOf("自我成長") + 1]).toBe("峰與谷");
     expect(labels[labels.indexOf("商業與媒體") + 1]).toBe("串流媒體");
     const count = (label: string) => page.locator("#tape .tick", { has: page.locator(".lb", { hasText: label }) }).first().locator(".ct").innerText();
-    expect(await count(RANDOM)).toBe("63");
     expect(await count("峰與谷")).toBe("35");
     expect(await count("商業與媒體")).toBe("25");
     expect(await count("Book C")).toBe("3");
@@ -38,17 +38,34 @@ test.describe("ruler contents", () => {
     expect(await count("#y")).toBe("1");
   });
 
-  test("the needle sits on the current mode, also after it changes elsewhere", async ({ page }) => {
+  test("the needle sits on the book, folder or tag that is open, also after it changes elsewhere", async ({ page }) => {
     await seed(page);
+    await goTo(page, "book", "bC");
     await openRuler(page);
-    expect(await rulerLabel(page)).toBe(RANDOM);
+    expect(await rulerLabel(page)).toBe("Book C");
     await page.mouse.move(700, 300);
     await isClosed(page);
-    await page.click("#allBtn");
+    await goTo(page, "tag", "x");
     await page.hover("#bm", { position: { x: 30, y: 30 } }); // a different spot from where the mouse left the tab
     await isOpen(page);
-    expect(await rulerLabel(page)).toBe(ALL);
+    expect(await rulerLabel(page)).toBe("#x");
     await expect(page.locator("#tape .tick.cur")).toHaveCount(1);
+  });
+
+  test("in the random mix or in All, just looking at the ruler changes nothing", async ({ page }) => {
+    await seed(page);
+    await recordModes(page);
+    for (const btn of [null, "#allBtn"]) {
+      if (btn) await page.click(btn);
+      const before = await state<string>(page, "s => s.mode.type");
+      await page.hover("#bm", { position: btn ? { x: 30, y: 30 } : { x: 54, y: 27 } });
+      await isOpen(page);
+      await page.waitForTimeout(600);
+      await page.mouse.move(700, 300);
+      await isClosed(page);
+      expect(await state<string>(page, "s => s.mode.type")).toBe(before);
+    }
+    expect(await modes(page)).toEqual(["all:null"]); // only the All button itself
   });
 });
 
@@ -131,11 +148,12 @@ test.describe("choosing", () => {
 
   test("scrolling back to where you started loads nothing", async ({ page }) => {
     await seed(page);
+    await goTo(page, "book", "bC");
     await recordModes(page);
     await openRuler(page);
     await wheel(page, 2);
     await page.mouse.wheel(0, -120);
-    await expect(page.locator("#tape .tick.cur .lb")).toHaveText(RANDOM);
+    await expect(page.locator("#tape .tick.cur .lb")).toHaveText("Book C");
     await page.waitForTimeout(700);
     expect(await modes(page)).toEqual([]);
   });
@@ -144,13 +162,15 @@ test.describe("choosing", () => {
     await seed(page);
     await recordModes(page);
     await openRuler(page);
+    const labels = await rulerLabels(page);
     await wheel(page);
     await page.mouse.move(700, 300, { steps: 5 });
     await isClosed(page);
-    expect(await modes(page)).toEqual(["all:null"]); // no need to wait for the settle delay
-    await expect(page.locator("#allBtn")).toHaveClass(/on/);
+    expect(await modes(page)).toHaveLength(1); // no need to wait for the settle delay
+    expect(await modeLabel(page)).toBe(labels[1]);
+    await expect(page.locator("#diceBtn")).not.toHaveClass(/on/);
     await page.waitForTimeout(700);
-    expect(await modes(page)).toEqual(["all:null"]);
+    expect(await modes(page)).toHaveLength(1);
   });
 
   test("arrow keys move the needle (not the feed) and Enter selects", async ({ page }) => {
@@ -176,10 +196,11 @@ test.describe("choosing", () => {
   test("Esc after moving the needle keeps the choice", async ({ page }) => {
     await seed(page);
     await page.keyboard.press("b");
+    const labels = await rulerLabels(page);
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("Escape");
     await isClosed(page);
-    expect(await state<string>(page, "s => s.mode.type")).toBe("all");
+    expect(await modeLabel(page)).toBe(labels[1]);
   });
 
   test("clicking another tick moves to it; clicking the current tick opens it and closes the ruler", async ({ page }) => {
@@ -201,11 +222,26 @@ test.describe("choosing", () => {
     await seed(page);
     await recordModes(page);
     await openRuler(page);
+    const labels = await rulerLabels(page);
     await wheel(page);
-    await expect(page.locator("#tape .tick.cur .lb")).toHaveText(ALL);
+    await expect(page.locator("#tape .tick.cur .lb")).toHaveText(labels[1]);
     await page.locator("#tape .tick.cur").click({ position: { x: 80, y: 100 } });
     await isClosed(page);
-    expect(await modes(page)).toEqual(["all:null"]);
+    expect(await modes(page)).toHaveLength(1);
+    expect(await modeLabel(page)).toBe(labels[1]);
+  });
+
+  test("from the random mix, clicking the tick under the needle opens it", async ({ page }) => {
+    await seed(page);
+    await recordModes(page);
+    await openRuler(page);
+    const labels = await rulerLabels(page);
+    await expect(page.locator("#tape .tick.cur .lb")).toHaveText(labels[0]);
+    await page.locator("#tape .tick.cur").click({ position: { x: 80, y: 100 } });
+    await isClosed(page);
+    expect(await modes(page)).toHaveLength(1);
+    expect(await modeLabel(page)).toBe(labels[0]);
+    await expect(page.locator("#diceBtn")).not.toHaveClass(/on/);
   });
 
   test("the ruler is endless: it loops past both ends", async ({ page }) => {

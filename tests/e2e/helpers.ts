@@ -161,11 +161,10 @@ export async function rowMenu(page: Page, kind: "book" | "folder" | "tag", id: s
 /** A button in the Library drawer's "Library file & backup" section. */
 export const fileButton = (page: Page, label: string | RegExp) => page.locator("#fileSec .fbtns button").filter({ hasText: label });
 
-/** The ruler label that matches the mode the app is in. */
+/** The ruler label that matches the mode the app is in (Random, All and search are not on the ruler). */
 export const modeLabel = (page: Page) => state<string>(page, `s => {
   const m = s.mode;
-  if (m.type === "random") return "🎲 隨機 Random";
-  if (m.type === "all") return "全部 All";
+  if (m.type === "random" || m.type === "all") return m.type;
   if (m.type === "book") return s.lib.books.find(b => b.id === m.id).title;
   if (m.type === "folder") return s.lib.folders.find(f => f.id === m.id).name;
   if (m.type === "tag") return "#" + m.id;

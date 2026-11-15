@@ -63,7 +63,7 @@ describe("filter", () => {
     expect(labels).toContain("Book A");
     expect(labels).not.toContain("Book B");
     expect(labels).not.toContain("Loose");
-    expect(rulerItems(lib, none).map((i) => i.type)).toEqual(["random", "all", "folder", "book", "folder", "book", "book", "tag"]);
+    expect(rulerItems(lib, none).map((i) => i.type)).toEqual(["folder", "book", "folder", "book", "book", "tag"]);
   });
   it("modes outside the filter are invalid", () => {
     const lib = sample();

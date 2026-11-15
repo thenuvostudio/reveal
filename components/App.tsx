@@ -30,7 +30,7 @@ export default function App() {
 
   useEffect(() => {
     // read-only debugging handle (also used by the browser tests for a few deep checks)
-    (window as unknown as { __highlights: typeof useApp }).__highlights = useApp;
+    (window as unknown as { __reveal: typeof useApp }).__reveal = useApp;
     useApp.getState().init();
   }, []);
   useEffect(() => { if (storageError) toast("Browser storage isn't available, so changes won't be kept. " + storageError, 6000); }, [storageError]);

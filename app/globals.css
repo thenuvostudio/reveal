@@ -320,6 +320,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 #welcome{position:fixed;inset:0;z-index:15;display:none;align-items:center;justify-content:center;padding:20px}
 body.empty #welcome{display:flex}
 body.empty .bar,body.empty .ruler,body.empty .centerbar{display:none}
+body.empty .empty-msg{display:none} /* the welcome card is translucent: don't let the feed's "Nothing here yet" show through it */
 .wcard{width:min(560px,100%);text-align:center;background:rgba(255,255,255,.12);box-shadow:inset 0 1px 1px rgba(255,255,255,.35),0 30px 80px rgba(0,0,0,.25);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:24px;padding:40px 32px;border:2px dashed transparent;transition:border-color .15s,background .15s}
 .wcard.over{border-color:rgba(255,255,255,.7);background:rgba(255,255,255,.2)}
 .wcard img{width:96px;height:96px;border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,.25)}

@@ -404,7 +404,7 @@ test.describe("backup and restore", () => {
   test("Download backup saves the whole library as JSON", async ({ page }) => {
     await seeded(page);
     const b = await download(page, () => fileButton(page, "Download backup").click());
-    expect(b.name).toMatch(/^highlights-backup-\d{4}-\d{2}-\d{2}\.json$/);
+    expect(b.name).toMatch(/^reveal-backup-\d{4}-\d{2}-\d{2}\.json$/);
     const data = JSON.parse(b.text);
     expect(data.app).toBe("readmoo-highlights");
     expect(data.version).toBe(1);
@@ -513,15 +513,15 @@ test.describe("library file (auto-save)", () => {
     await expect(dot(page)).not.toHaveClass(/on|warn/);
     await expect(fileButton(page, "Stop auto-saving")).toHaveCount(0);
     await fileButton(page, "Save library to a file").click();
-    await expect(toast(page)).toHaveText("Library linked. Changes now save to highlights-library.json");
+    await expect(toast(page)).toHaveText("Library linked. Changes now save to reveal-library.json");
     await expect(dot(page)).toHaveClass(/on/);
     await expect(page.locator("#library .fstat")).toHaveText("Auto-saving");
     await expect(page.locator("#library .fstat")).toHaveClass(/on/);
-    await expect(page.locator("#library .fhint")).toContainText("Linked to “highlights-library.json”. Every change is written to it automatically. Last saved");
-    await expect(page.locator("#brandBtn")).toHaveAttribute("title", /auto-saving to highlights-library\.json/);
+    await expect(page.locator("#library .fhint")).toContainText("Linked to “reveal-library.json”. Every change is written to it automatically. Last saved");
+    await expect(page.locator("#brandBtn")).toHaveAttribute("title", /auto-saving to reveal-library\.json/);
     let w = await lastWrite(page);
     expect(w.n).toBe(1);
-    expect(w.name).toBe("highlights-library.json");
+    expect(w.name).toBe("reveal-library.json");
     expect(w.data.app).toBe("readmoo-highlights");
     expect(w.data.highlights).toHaveLength(63);
 
@@ -560,11 +560,11 @@ test.describe("library file (auto-save)", () => {
     await expect(dot(page)).toHaveClass(/warn/);
     await expect(page.locator("#library .fstat")).toHaveText("Needs permission");
     await expect(page.locator("#library .fhint")).toContainText("the browser needs your permission again");
-    await expect(page.locator("#brandBtn")).toHaveAttribute("title", /click to reconnect highlights-library\.json/);
+    await expect(page.locator("#brandBtn")).toHaveAttribute("title", /click to reconnect reveal-library\.json/);
     expect((await lastWrite(page)).n).toBe(1);
 
     await page.evaluate(() => { (window as unknown as { __fs: { failWrites: boolean } }).__fs.failWrites = false; });
-    await fileButton(page, "Reconnect to highlights-library.json").click();
+    await fileButton(page, "Reconnect to reveal-library.json").click();
     await expect(toast(page)).toHaveText("Reconnected");
     await expect(dot(page)).toHaveClass(/on/);
     await expect(fileButton(page, "Reconnect")).toHaveCount(0);

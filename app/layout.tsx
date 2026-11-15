@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Highlights",
+  title: "Reveal",
   description: "Review your Readmoo book highlights, one quote at a time.",
   icons: { icon: "./icon.svg" },
 };

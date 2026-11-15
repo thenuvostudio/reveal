@@ -9,7 +9,7 @@ import * as A from "./libraryActions";
 
 interface MenuItem { label: string; run: () => void; danger?: boolean }
 type Menu = { x: number; y: number; items: (MenuItem | "-")[] } | null;
-const DND = "application/x-highlights-item";
+const DND = "application/x-reveal-item";
 
 export default function LibraryDrawer() {
   const open = useApp((s) => s.drawer === "library");

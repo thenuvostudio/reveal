@@ -88,7 +88,7 @@ export default function TopBar() {
       <div className="brand" id="brandBtn" ref={brandRef} role="button" tabIndex={0} title={brandTitle} aria-label="Open library"
         onClick={toggleLibrary} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleLibrary(); } }}>
         <span className="logowrap"><img src={ICON} alt="" className="logo" /><span className={`dot ${dot}`} id="fileDot" data-testid="file-dot" /></span>
-        <span className="name">Highlights.</span>
+        <span className="name">Reveal.</span>
       </div>
       <div className="centerbar" id="centerBar">
         <button className="chip" id="searchBtn" title="Search (/)" aria-label="Search" onClick={() => { setSopen(true); setTimeout(() => inputRef.current?.focus(), 0); }}>⌕</button>

@@ -9,9 +9,9 @@ const isClosed = (page: Page) => expect(ruler(page)).not.toHaveClass(/open/);
 /** Counts every time the app loads another mode, so "only once" can be checked. */
 async function recordModes(page: Page) {
   await page.evaluate(() => {
-    const w = window as unknown as { __modes: string[]; __highlights: { subscribe(fn: (s: { mode: { type: string; id: string | null } }, p: { mode: unknown }) => void): void } };
+    const w = window as unknown as { __modes: string[]; __reveal: { subscribe(fn: (s: { mode: { type: string; id: string | null } }, p: { mode: unknown }) => void): void } };
     w.__modes = [];
-    w.__highlights.subscribe((s, p) => { if (s.mode !== p.mode) w.__modes.push(s.mode.type + ":" + s.mode.id); });
+    w.__reveal.subscribe((s, p) => { if (s.mode !== p.mode) w.__modes.push(s.mode.type + ":" + s.mode.id); });
   });
 }
 const modes = (page: Page) => page.evaluate(() => (window as unknown as { __modes: string[] }).__modes);

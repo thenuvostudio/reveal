@@ -25,7 +25,7 @@ type PickerWindow = Window & {
   showOpenFilePicker?: (o: unknown) => Promise<FsHandle[]>;
 };
 export const fsSupported = () => typeof window !== "undefined" && "showSaveFilePicker" in window;
-const pickerTypes = [{ description: "Highlights library", accept: { "application/json": [".json"] } }];
+const pickerTypes = [{ description: "Reveal library", accept: { "application/json": [".json"] } }];
 
 export interface AppState {
   ready: boolean;
@@ -202,7 +202,7 @@ export const useApp = create<AppState>()((set, get) => {
       const w = window as PickerWindow;
       if (!w.showSaveFilePicker) return "Auto-saving to a file needs Chrome or Edge.";
       try {
-        const handle = await w.showSaveFilePicker({ suggestedName: "highlights-library.json", types: pickerTypes });
+        const handle = await w.showSaveFilePicker({ suggestedName: "reveal-library.json", types: pickerTypes });
         set({ file: { handle, ok: true, lastSave: null } });
         await kvSet("fileHandle", handle).catch(() => {}); // remembering it for next time is best-effort
         dirtyForFile = true;

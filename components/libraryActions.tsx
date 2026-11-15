@@ -103,7 +103,7 @@ export function moveDialog(type: "book" | "folder", id: string) {
 
 /* ---------- backup / restore ---------- */
 export function downloadBackup() {
-  downloadText(`highlights-backup-${new Date().toISOString().slice(0, 10)}.json`, serialize(st().lib), "application/json");
+  downloadText(`reveal-backup-${new Date().toISOString().slice(0, 10)}.json`, serialize(st().lib), "application/json");
 }
 export async function restoreFromJSON(file: File) {
   try {

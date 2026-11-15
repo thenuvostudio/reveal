@@ -1,5 +1,5 @@
 {
-  "name": "highlights",
+  "name": "reveal",
   "version": "1.0.0",
   "private": true,
   "description": "Review your Readmoo book highlights: full-screen quotes, a looping ruler, folders, tags, rich-text edits. Runs offline; data stays in your browser.",

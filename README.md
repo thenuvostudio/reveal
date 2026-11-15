@@ -1,10 +1,10 @@
-# Highlights
+# Reveal
 
 A reader for your [Readmoo](https://readmoo.com) book highlights. Import Readmoo's CSV exports and review your quotes one screen at a time: a random mix, a whole book, a folder or a tag. You can edit quotes with rich text, add notes and tags, organise books into folders, and give each book its own background.
 
 Everything runs in the browser. Your library is stored on your own computer (IndexedDB), with optional auto-saving to a JSON file. Nothing is uploaded anywhere.
 
-This is the Next.js port of the single-file `highlights.html` app. It looks and behaves the same, and both read the same backup files.
+Reveal is the Next.js port of the single-file `highlights.html` app (it was called "Highlights" until the rename). Apart from the differences listed at the end, it looks and behaves the same, and both read the same backup files.
 
 ## Requirements
 
@@ -122,7 +122,7 @@ tests/fixtures/  Sample CSVs, a sample library and an image
 
 The app is client-only (`dynamic(() => import("./App"), { ssr: false })`) and builds with `output: "export"`. Stack: Next.js 16, React 19, TypeScript (strict), zustand.
 
-For debugging, the zustand store is available in the browser console as `window.__highlights`.
+For debugging, the zustand store is available in the browser console as `window.__reveal`.
 
 ## Known limits
 
@@ -134,5 +134,7 @@ For debugging, the zustand store is available in the browser console as `window.
 The first two behave the same in the HTML version.
 
 ## Differences from the HTML version
+
+- **Name.** The app is called Reveal. Backups download as `reveal-backup-<date>.json` and a newly linked file is suggested as `reveal-library.json`. Two internal names are kept on purpose so existing data keeps working: the IndexedDB database `readmoo-highlights` and the `app: "readmoo-highlights"` field inside backup files.
 
 - **Touch screens: tapping the bookmark tab opens the ruler.** In the HTML version a tap opened the ruler and closed it again at once, because the browser reports a tap as "mouse enters, click, mouse leaves". Here only a real mouse opens the ruler by hovering; a finger's tap toggles it.

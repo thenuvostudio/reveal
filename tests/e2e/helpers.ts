@@ -27,7 +27,7 @@ export async function installFakeFs(page: Page) {
         async getFile() { return new File([content], name, { type: "application/json" }); },
       };
     };
-    w.showSaveFilePicker = async () => make("highlights-library.json", "");
+    w.showSaveFilePicker = async () => make("reveal-library.json", "");
     w.showOpenFilePicker = async () => [make("mylib.json", w.__fs.openContent)];
   });
 }
@@ -78,7 +78,7 @@ export async function dismissHop(page: Page) {
 
 /** Read the app state (read-only debugging handle the app exposes). */
 export function state<T>(page: Page, fn: string): Promise<T> {
-  return page.evaluate(`(() => { const s = window.__highlights.getState(); return (${fn})(s); })()`) as Promise<T>;
+  return page.evaluate(`(() => { const s = window.__reveal.getState(); return (${fn})(s); })()`) as Promise<T>;
 }
 
 export const pageCount = (page: Page) => page.locator(".page[data-pi]").count();

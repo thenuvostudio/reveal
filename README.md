@@ -74,7 +74,7 @@ Things to know:
 | `editing.spec.ts` | Every editor toolbar button, save / cancel / revert, paste, notes, tags, copy, delete |
 | `ruler.spec.ts` | Opening and closing, wheel, keys, clicks, the settle delay, looping, empty items |
 | `topbar-filter.spec.ts` | Search, dice, All, the filter panel, layout at 1440 / 1024 / 600 / 390 px |
-| `settings.spec.ts` | Quotes per scroll, font size, position, order, blur, backgrounds, cursors, preview |
+| `settings.spec.ts` | Quotes per scroll, font size, position, order, blur, backgrounds, cursors, preview, colour themes and custom sets |
 | `library.spec.ts` | Drawer, folders, drag-and-drop, every ⋯ menu item, backup / restore, linked file |
 | `persistence.spec.ts` | What survives a reload, and moving data to and from the HTML version |
 | `phone.spec.ts` | Pixel 7: layout, logo, search, ruler tap and swipe, the docked quote actions |
@@ -136,6 +136,7 @@ The first two behave the same in the HTML version.
 ## Differences from the HTML version
 
 - **Name.** The app is called Reveal. Backups download as `reveal-backup-<date>.json` and a newly linked file is suggested as `reveal-library.json`. Two internal names are kept on purpose so existing data keeps working: the IndexedDB database `readmoo-highlights` and the `app: "readmoo-highlights"` field inside backup files.
+- **Colour themes.** Settings → Colour theme offers seven sets of natural colours (Paper and cloth, Earth, Wood, Stone, Plants, Water and sky, Accents) next to "Original", the random gradients, which stays the default. With a set chosen, every book and folder without an image of its own gets one colour of the set, blended with its neighbours in the set. You can add sets of your own (2 to 6 colours), and edit or delete them. Pale colours are deepened just enough for the white text to stay readable (at least 4.5:1 contrast), so a pale set looks deeper on the page than on its card. The built-in sets are in `lib/palettes.ts`; the theme and your own sets are stored with the settings, in this browser only, and are not part of a backup.
 - **The ruler lists only folders, books and tags.** Random and All are not on it; use the dice and the All button in the top bar. While the random mix, All or a search is showing, the needle rests on an item without loading it; scroll to another item, or click the one under the needle, to open it.
 
 - **Touch screens: tapping the bookmark tab opens the ruler.** In the HTML version a tap opened the ruler and closed it again at once, because the browser reports a tap as "mouse enters, click, mouse leaves". Here only a real mouse opens the ruler by hovering; a finger's tap toggles it.

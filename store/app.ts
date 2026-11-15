@@ -5,8 +5,9 @@ import { emptyLib, folderById, serialize, validateLib, mergeLib } from "@/lib/li
 import { kvDel, kvGet, kvSet } from "@/lib/storage";
 import { modeValid, newSeed } from "@/lib/feed";
 import { CURSORS } from "@/lib/cursors";
+import { ORIGINAL_ID, findPalette, validPalettes } from "@/lib/palettes";
 
-export const DEFAULT_SETTINGS: Settings = { perScroll: 1, fontSize: 72, position: "random", blur: true, cursor: "1", withinBook: "chapter" };
+export const DEFAULT_SETTINGS: Settings = { perScroll: 1, fontSize: 72, position: "random", blur: true, cursor: "1", withinBook: "chapter", theme: ORIGINAL_ID, customPalettes: [] };
 const EMPTY_FILTER: Filter = { folders: [], tags: [] };
 
 /** What the feed should do with the reader's place after the next change. */
@@ -120,6 +121,8 @@ export const useApp = create<AppState>()((set, get) => {
         const st = await kvGet<Partial<Settings>>("settings");
         const settings = { ...DEFAULT_SETTINGS, ...(st || {}) } as Settings;
         if (!CURSORS.some((c) => c.id === settings.cursor) && settings.cursor !== "system") settings.cursor = DEFAULT_SETTINGS.cursor;
+        settings.customPalettes = validPalettes(settings.customPalettes);
+        if (typeof settings.theme !== "string" || !findPalette(settings.theme, settings.customPalettes)) settings.theme = ORIGINAL_ID;
         const stored = await kvGet("library");
         const lib = stored ? validateLib(stored) : emptyLib();
         let handle: FsHandle | null = null, ok = false;

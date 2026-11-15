@@ -1,5 +1,6 @@
 import type { Book, Folder, Library } from "./types";
 import { folderPath } from "./library";
+import { mix, toHex, toned, type Palette } from "./palettes";
 
 export function hash(s: string): number {
   let h = 2166136261;
@@ -28,7 +29,32 @@ export function gradientFor(key: string): Gradient {
     css: `radial-gradient(circle at ${20 + r() * 60}% ${15 + r() * 50}%, hsl(${h3} 80% 60% / .45), transparent 55%), radial-gradient(circle at ${r() * 100}% 100%, hsl(${h2} 85% 55% / .35), transparent 50%), linear-gradient(${ang}deg, ${c1}, ${c2})`,
   };
 }
-export const gradOf = (kind: "b" | "f", ent: Book | Folder) => gradientFor(kind + ent.id + (ent.bgSeed || ""));
+/** Which colour of the set this key gets as its main colour. */
+export const paletteIndex = (p: Palette, key: string) => hash(key) % p.colors.length;
+/** A gradient built only from a colour set: the key's own colour, blended with its neighbours in the set.
+ *  Every colour is toned down just enough for white text to stay readable. */
+export function paletteGradient(p: Palette, key: string): Gradient {
+  const n = p.colors.length, i = paletteIndex(p, key), r = rng(hash(key + "|theme"));
+  const main = toned(p.colors[i]), second = toned(p.colors[(i + 1) % n]), third = toned(p.colors[(i + 2) % n]);
+  const c1 = toHex(main), c2 = toHex(mix(mix(main, second, 0.35), [0, 0, 0], 0.22));
+  const ang = Math.floor(r() * 360);
+  return {
+    c1, c2,
+    css: `radial-gradient(circle at ${Math.round(20 + r() * 60)}% ${Math.round(15 + r() * 50)}%, ${toHex(second)}73, transparent 55%), radial-gradient(circle at ${Math.round(r() * 100)}% 100%, ${toHex(third)}59, transparent 50%), linear-gradient(${ang}deg, ${c1}, ${c2})`,
+  };
+}
+const keyOf = (kind: "b" | "f", ent: Book | Folder) => kind + ent.id + (ent.bgSeed || "");
+/** A book's or folder's gradient: from the colour set if a theme is on, else the app's own random one. */
+export const gradOf = (kind: "b" | "f", ent: Book | Folder, palette: Palette | null = null) =>
+  palette ? paletteGradient(palette, keyOf(kind, ent)) : gradientFor(keyOf(kind, ent));
+/** A new background seed. With a theme on, one that lands on a different colour of the set. */
+export function rerollSeed(kind: "b" | "f", ent: Book | Folder, palette: Palette | null): string {
+  const fresh = () => Math.random().toString(36).slice(2, 8);
+  if (!palette || palette.colors.length < 2) return fresh();
+  const now = paletteIndex(palette, keyOf(kind, ent));
+  for (let t = 0; t < 40; t++) { const s = fresh(); if (paletteIndex(palette, kind + ent.id + s) !== now) return s; }
+  return fresh();
+}
 
 /** A book's own image, else the nearest folder image above it, else nothing. */
 export function effectiveImage(lib: Library, b: Book | undefined): string | null {
@@ -42,9 +68,9 @@ export function effectiveImage(lib: Library, b: Book | undefined): string | null
 export const cls = (id: string) => String(id).replace(/[^\w-]/g, "_");
 const cssUrl = (u: string) => `url("${u.replace(/["\\\n]/g, "")}")`;
 /** One rule per book/folder, so big image data-URLs live in a single <style> instead of on every page. */
-export function bgStyles(lib: Library): string {
+export function bgStyles(lib: Library, palette: Palette | null = null): string {
   let css = "";
-  lib.books.forEach((b) => { const img = effectiveImage(lib, b); css += `.bgb-${cls(b.id)}{background-image:${img ? cssUrl(img) : gradOf("b", b).css}}\n`; });
-  lib.folders.forEach((f) => { css += `.bgf-${cls(f.id)}{background-image:${f.bgImage ? cssUrl(f.bgImage) : gradOf("f", f).css}}\n`; });
+  lib.books.forEach((b) => { const img = effectiveImage(lib, b); css += `.bgb-${cls(b.id)}{background-image:${img ? cssUrl(img) : gradOf("b", b, palette).css}}\n`; });
+  lib.folders.forEach((f) => { css += `.bgf-${cls(f.id)}{background-image:${f.bgImage ? cssUrl(f.bgImage) : gradOf("f", f, palette).css}}\n`; });
   return css;
 }

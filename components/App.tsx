@@ -2,6 +2,7 @@
 import { useEffect, useRef } from "react";
 import { useApp } from "@/store/app";
 import { bgStyles } from "@/lib/colors";
+import { findPalette } from "@/lib/palettes";
 import { bookById, folderById } from "@/lib/library";
 import { resizeImage } from "@/lib/image";
 import Feed from "./Feed";
@@ -23,6 +24,8 @@ export default function App() {
   const lib = useApp((s) => s.lib);
   const drawer = useApp((s) => s.drawer);
   const storageError = useApp((s) => s.storageError);
+  const theme = useApp((s) => s.settings.theme);
+  const customPalettes = useApp((s) => s.settings.customPalettes);
   const csvRef = useRef<HTMLInputElement>(null);
   const jsonRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLInputElement>(null);
@@ -113,7 +116,7 @@ export default function App() {
   void version;
   return (
     <>
-      <style id="bgStyles">{bgStyles(lib)}</style>
+      <style id="bgStyles">{bgStyles(lib, findPalette(theme, customPalettes))}</style>
       {ready && <Feed />}
       {empty && <Welcome />}
       <TopBar />

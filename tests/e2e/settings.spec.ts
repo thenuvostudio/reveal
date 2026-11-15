@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { closeDrawer, currentIds, expectPage, feedIds, fixture, goTo, openSettings, SAMPLE, seed, state, storedSettings, toast } from "./helpers";
+import { closeDrawer, currentIds, dialog, expectPage, feedIds, fixture, goTo, openSettings, SAMPLE, seed, state, storedSettings, toast } from "./helpers";
+import { BUILTIN_PALETTES, MAX_LUMINANCE, luminance, toHex, toRgb, toned } from "../../lib/palettes";
 
 type Sample = { highlights: { id: string; bookId: string; chapter: string; date: string; text: string }[] };
 const sample = JSON.parse(readFileSync(SAMPLE, "utf8")) as Sample;
@@ -382,6 +383,291 @@ test.describe("saving", () => {
     await page.click("#segO [data-v='newest']");
     await page.locator("#blurT").uncheck();
     await page.click(".curgrid [data-cur='7']");
-    await expect.poll(() => storedSettings(page)).toEqual({ perScroll: 3, fontSize: 74, position: "center", withinBook: "newest", blur: false, cursor: "7" });
+    await expect.poll(() => storedSettings(page)).toEqual({ perScroll: 3, fontSize: 74, position: "center", withinBook: "newest", blur: false, cursor: "7", theme: "original", customPalettes: [] });
+  });
+});
+
+test.describe("colour theme", () => {
+  type Pal = { id: string; name: string; colors: string[] };
+  const card = (page: Page, id: string) => page.locator(`#themes [data-theme='${id}']`);
+  /** The main colour of every book's and folder's gradient, read from the page's stylesheet. */
+  const mainColours = (page: Page) => page.evaluate(() => {
+    const out: Record<string, string> = {};
+    for (const line of (document.getElementById("bgStyles")!.textContent || "").split("\n")) {
+      const m = line.match(/^\.(bg[bf]-[\w-]+)\{.*linear-gradient\(\d+deg, (#[0-9a-f]{6})/);
+      if (m) out[m[1]] = m[2];
+    }
+    return out;
+  });
+  const usesOriginal = (page: Page) => page.evaluate(() => (document.getElementById("bgStyles")!.textContent || "").includes("hsl("));
+  const custom = (page: Page) => state<Pal[]>(page, "s => s.settings.customPalettes");
+  const newSet = async (page: Page, name: string, colors: string[]) => {
+    await page.click("[data-theme-new]");
+    await page.fill("#palName", name);
+    for (let i = 0; i < colors.length; i++) {
+      if (i >= 2) await dialog(page).locator("[data-padd]").click();
+      await page.fill(`[data-ph='${i}']`, colors[i]);
+    }
+    await dialog(page).locator("[data-ok]").click();
+    await expect(page.locator(".overlay")).toHaveCount(0);
+  };
+
+  test("lists Original and the seven natural sets; Original is the default", async ({ page }) => {
+    await seed(page);
+    await openSettings(page);
+    await expect(page.locator("#themes .themeopt .tn")).toHaveText(["Original", ...BUILTIN_PALETTES.map((p) => p.name)]);
+    await expect(card(page, "original")).toHaveClass(/on/);
+    await expect(page.locator("#themes .themeopt.on")).toHaveCount(1);
+    expect(await setting(page, "theme")).toBe("original");
+    expect(await usesOriginal(page)).toBe(true);
+    // each card shows its set's colours
+    for (const p of BUILTIN_PALETTES) {
+      const shown = await card(page, p.id).locator(".strip i").evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor));
+      expect(shown).toEqual(p.colors.map((c) => `rgb(${toRgb(c).join(", ")})`));
+    }
+    await expect(page.locator("#themes [data-theme-edit], #themes [data-theme-del]")).toHaveCount(0); // built-in sets can't be changed
+  });
+
+  for (const p of BUILTIN_PALETTES) {
+    test(`“${p.name}” colours every book and folder with that set`, async ({ page }) => {
+      await seed(page);
+      await goTo(page, "book", "bA");
+      await openSettings(page);
+      const before = await bgImage(page, ".page.bgb-bA");
+      await card(page, p.id).click();
+      await expect(card(page, p.id)).toHaveClass(/on/);
+      await expect(card(page, p.id)).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator("#themes .themeopt.on")).toHaveCount(1);
+      expect(await setting(page, "theme")).toBe(p.id);
+      const tones = p.colors.map((c) => toHex(toned(c)));
+      const mains = await mainColours(page);
+      expect(Object.keys(mains).sort()).toEqual(["bgb-bA", "bgb-bB", "bgb-bC", "bgf-fA", "bgf-fB"]);
+      for (const [k, c] of Object.entries(mains)) {
+        expect(tones, `${k} uses a colour of the set`).toContain(c);
+        expect(luminance(toRgb(c)), `${k} is dark enough for white text`).toBeLessThanOrEqual(MAX_LUMINANCE + 1e-9);
+      }
+      expect(await usesOriginal(page)).toBe(false);
+      // the page, the Settings swatch and the mini preview all show it
+      await expect.poll(() => bgImage(page, ".page.bgb-bA")).not.toBe(before);
+      const now = await bgImage(page, ".page.bgb-bA");
+      expect(now).toContain(`rgb(${toRgb(mains["bgb-bA"]).join(", ")})`);
+      expect(await bgImage(page, "#setBody .bgrow[data-kind='b'] .bgsw")).toBe(now);
+      expect(await bgImage(page, "#mini")).toBe(now);
+    });
+  }
+
+  test("going back to Original brings the random gradients back unchanged", async ({ page }) => {
+    await seed(page);
+    await goTo(page, "book", "bC");
+    await openSettings(page);
+    const before = await bgImage(page, ".page.bgb-bC");
+    await card(page, "plants").click();
+    await expect.poll(() => bgImage(page, ".page.bgb-bC")).not.toBe(before);
+    await card(page, "original").click();
+    await expect.poll(() => bgImage(page, ".page.bgb-bC")).toBe(before);
+    expect(await setting(page, "theme")).toBe("original");
+  });
+
+  test("“New colour” moves the book to another colour of the set", async ({ page }) => {
+    await seed(page);
+    await goTo(page, "book", "bC");
+    await openSettings(page);
+    await card(page, "earth").click();
+    const tones = BUILTIN_PALETTES.find((p) => p.id === "earth")!.colors.map((c) => toHex(toned(c)));
+    let last = (await mainColours(page))["bgb-bC"];
+    for (let i = 0; i < 5; i++) {
+      await page.locator("#setBody .bgrow[data-kind='b'] [data-bg=reroll]").click();
+      await expect.poll(async () => (await mainColours(page))["bgb-bC"]).not.toBe(last);
+      last = (await mainColours(page))["bgb-bC"];
+      expect(tones).toContain(last);
+    }
+  });
+
+  test("an uploaded image still wins over the theme", async ({ page }) => {
+    await seed(page);
+    await goTo(page, "book", "bC");
+    await openSettings(page);
+    await card(page, "stone").click();
+    const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.locator("#setBody .bgrow[data-kind='b'] [data-bg=upload]").click()]);
+    await chooser.setFiles(fixture("bg.jpg"));
+    await expect(toast(page)).toHaveText("Background image set");
+    expect(await bgImage(page, ".page.bgb-bC")).toContain("data:image/jpeg");
+    expect(Object.keys(await mainColours(page))).not.toContain("bgb-bC");
+    await page.locator("#setBody .bgrow[data-kind='b'] [data-bg=remove]").click();
+    await expect.poll(async () => Object.keys(await mainColours(page))).toContain("bgb-bC"); // back to the theme
+  });
+
+  test("a new book gets a colour of the active set", async ({ page }) => {
+    await seed(page);
+    await openSettings(page);
+    await card(page, "wood").click();
+    await closeDrawer(page);
+    await page.setInputFiles("#csvInput", [{ name: "new.csv", mimeType: "text/csv", buffer: readFileSync(fixture("streaming.csv")) }]);
+    await page.fill("input[data-i='0']", "A brand new book");
+    await page.click(".modal [data-ok]");
+    await page.getByTestId("hop").click();
+    const id = await state<string>(page, "s => s.lib.books.find(b => b.title === 'A brand new book').id");
+    const tones = BUILTIN_PALETTES.find((p) => p.id === "wood")!.colors.map((c) => toHex(toned(c)));
+    expect(tones).toContain((await mainColours(page))["bgb-" + id]);
+  });
+
+  test("add your own set: it is saved, selected and used at once", async ({ page }) => {
+    await seed(page);
+    await openSettings(page);
+    await page.click("[data-theme-new]");
+    await expect(dialog(page).locator("h3")).toHaveText("New colour set");
+    await expect(page.locator("#palName")).toBeFocused();
+    await expect(page.locator("#palRows .palrow")).toHaveCount(2);
+    await dialog(page).locator("[data-x]").click(); // Cancel adds nothing
+    expect(await custom(page)).toEqual([]);
+
+    await newSet(page, "  Autumn ", ["#7a3b1e", "C28A2B", "#345"]);
+    await expect(toast(page)).toHaveText("Colour set “Autumn” saved");
+    const sets = await custom(page);
+    expect(sets).toHaveLength(1);
+    expect(sets[0]).toMatchObject({ name: "Autumn", colors: ["#7a3b1e", "#c28a2b", "#334455"] });
+    const id = sets[0].id;
+    await expect(card(page, id)).toHaveClass(/on/);
+    await expect(card(page, id).locator(".tn")).toHaveText("Autumn");
+    await expect(card(page, id).locator(".strip i")).toHaveCount(3);
+    expect(await setting(page, "theme")).toBe(id);
+    const tones = sets[0].colors.map((c) => toHex(toned(c)));
+    for (const c of Object.values(await mainColours(page))) expect(tones).toContain(c);
+    await expect(page.locator(`[data-theme-edit='${id}']`)).toBeVisible();
+    await expect(page.locator(`[data-theme-del='${id}']`)).toBeVisible();
+  });
+
+  test("the set editor: colour picker, add and remove rows, 2 to 6 colours", async ({ page }) => {
+    await seed(page);
+    await openSettings(page);
+    await page.click("[data-theme-new]");
+    const rows = page.locator("#palRows .palrow"), add = dialog(page).locator("[data-padd]");
+    await expect(dialog(page).locator("[data-prm]")).toHaveCount(2);
+    await expect(dialog(page).locator("[data-prm='0']")).toBeDisabled(); // never fewer than two
+    for (let n = 3; n <= 6; n++) { await add.click(); await expect(rows).toHaveCount(n); }
+    await expect(add).toBeDisabled(); // never more than six
+    await expect(dialog(page).locator("[data-prm='0']")).toBeEnabled();
+    await page.fill("[data-ph='5']", "#0a0b0c");
+    await dialog(page).locator("[data-prm='0']").click();
+    await expect(rows).toHaveCount(5);
+    await expect(page.locator("[data-ph='4']")).toHaveValue("#0a0b0c"); // the others keep their values
+    await expect(add).toBeEnabled();
+    // the colour picker and the hex box stay in step, and the preview strip follows
+    await page.locator("[data-pc='0']").fill("#123456");
+    await expect(page.locator("[data-ph='0']")).toHaveValue("#123456");
+    await page.fill("[data-ph='1']", "#abcdef");
+    await expect(page.locator("[data-pc='1']")).toHaveValue("#abcdef");
+    const strip = await page.getByTestId("pal-preview").locator("i").evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor));
+    expect(strip.slice(0, 2)).toEqual(["rgb(18, 52, 86)", "rgb(171, 205, 239)"]);
+    expect(strip).toHaveLength(5);
+  });
+
+  test("the set editor refuses an empty name, a taken name and a bad colour", async ({ page }) => {
+    await seed(page);
+    await openSettings(page);
+    await page.click("[data-theme-new]");
+    await dialog(page).locator("[data-ok]").click();
+    await expect(toast(page)).toHaveText("Give the colour set a name.");
+    await page.fill("#palName", "earth");
+    await dialog(page).locator("[data-ok]").click();
+    await expect(toast(page)).toHaveText("There is already a colour set called “earth”.");
+    await page.fill("#palName", "Mine");
+    await page.fill("[data-ph='1']", "#12zz");
+    await page.keyboard.press("Enter"); // Enter saves, like the button
+    await expect(toast(page)).toHaveText("“#12zz” is not a colour. Use a hex code like #A65F45.");
+    await expect(page.locator(".overlay")).toHaveCount(1);
+    expect(await custom(page)).toEqual([]);
+    await page.fill("[data-ph='1']", "#1234aa");
+    await page.keyboard.press("Enter");
+    await expect(page.locator(".overlay")).toHaveCount(0);
+    expect((await custom(page)).map((p) => p.name)).toEqual(["Mine"]);
+  });
+
+  test("edit a set of your own", async ({ page }) => {
+    await seed(page);
+    await openSettings(page);
+    await newSet(page, "Autumn", ["#7a3b1e", "#c28a2b"]);
+    const id = (await custom(page))[0].id;
+    await page.click(`[data-theme-edit='${id}']`);
+    await expect(dialog(page).locator("h3")).toHaveText("Edit colour set");
+    await expect(page.locator("#palName")).toHaveValue("Autumn");
+    await expect(page.locator("[data-ph='0']")).toHaveValue("#7a3b1e");
+    await page.fill("#palName", "Late autumn");
+    await page.fill("[data-ph='0']", "#203040");
+    await dialog(page).locator("[data-ok]").click();
+    await expect(toast(page)).toHaveText("Colour set “Late autumn” saved");
+    expect(await custom(page)).toEqual([{ id, name: "Late autumn", colors: ["#203040", "#c28a2b"] }]);
+    await expect(card(page, id).locator(".tn")).toHaveText("Late autumn");
+    // it is the active theme, so the pages follow the edit
+    const tones = ["#203040", "#c28a2b"].map((c) => toHex(toned(c)));
+    await expect.poll(async () => Object.values(await mainColours(page)).every((c) => tones.includes(c))).toBe(true);
+    // keeping its own name is not "a taken name"
+    await page.click(`[data-theme-edit='${id}']`);
+    await dialog(page).locator("[data-ok]").click();
+    await expect(page.locator(".overlay")).toHaveCount(0);
+  });
+
+  test("delete a set of your own: cancel keeps it, confirm removes it and falls back to Original", async ({ page }) => {
+    await seed(page);
+    await openSettings(page);
+    await newSet(page, "Autumn", ["#7a3b1e", "#c28a2b"]);
+    await newSet(page, "Night", ["#101820", "#2a3440"]);
+    const [autumn, night] = (await custom(page)).map((p) => p.id);
+    expect(await setting(page, "theme")).toBe(night);
+
+    await page.click(`[data-theme-del='${autumn}']`); // not the active one
+    await expect(dialog(page).locator("h3")).toHaveText("Delete this colour set?");
+    await dialog(page).getByRole("button", { name: "Cancel" }).click();
+    expect(await custom(page)).toHaveLength(2);
+    await page.click(`[data-theme-del='${autumn}']`);
+    await dialog(page).locator("[data-ok]").click();
+    await expect(toast(page)).toHaveText("Colour set deleted");
+    await expect(card(page, autumn)).toHaveCount(0);
+    expect((await custom(page)).map((p) => p.id)).toEqual([night]);
+    expect(await setting(page, "theme")).toBe(night); // the active theme is untouched
+
+    await page.click(`[data-theme-del='${night}']`); // the active one
+    await dialog(page).locator("[data-ok]").click();
+    await expect(card(page, night)).toHaveCount(0);
+    expect(await custom(page)).toEqual([]);
+    expect(await setting(page, "theme")).toBe("original");
+    await expect(card(page, "original")).toHaveClass(/on/);
+    expect(await usesOriginal(page)).toBe(true);
+  });
+
+  test("the theme and your own sets survive a reload", async ({ page }) => {
+    await seed(page);
+    await openSettings(page);
+    await newSet(page, "Autumn", ["#7a3b1e", "#c28a2b"]);
+    const id = (await custom(page))[0].id;
+    await card(page, "water").click();
+    await expect.poll(async () => (await storedSettings(page))?.theme).toBe("water");
+    await expect.poll(async () => ((await storedSettings(page))?.customPalettes as Pal[]).length).toBe(1);
+    const mains = await mainColours(page);
+    await page.reload();
+    await expect(page.locator(".page[data-pi]")).toHaveCount(63);
+    expect(await setting(page, "theme")).toBe("water");
+    expect(await custom(page)).toEqual([{ id, name: "Autumn", colors: ["#7a3b1e", "#c28a2b"] }]);
+    expect(await mainColours(page)).toEqual(mains); // every book kept its colour
+    await openSettings(page);
+    await expect(card(page, "water")).toHaveClass(/on/);
+    await expect(card(page, id).locator(".tn")).toHaveText("Autumn");
+  });
+
+  test("a stored theme that no longer exists falls back to Original, and broken sets are dropped", async ({ page }) => {
+    await seed(page);
+    await page.evaluate(() => new Promise<void>((resolve, reject) => {
+      const r = indexedDB.open("readmoo-highlights", 1);
+      r.onerror = () => reject(r.error);
+      r.onsuccess = () => {
+        const t = r.result.transaction("kv", "readwrite");
+        t.objectStore("kv").put({ theme: "deleted-long-ago", customPalettes: [{ id: "c1", name: "Good", colors: ["#111111", "#222222"] }, { id: "c2", name: "One colour", colors: ["#111111"] }, "junk"] }, "settings");
+        t.oncomplete = () => { r.result.close(); resolve(); };
+      };
+    }));
+    await page.reload();
+    await expect(page.locator("#top")).toBeVisible();
+    await expect.poll(() => setting(page, "theme")).toBe("original");
+    expect(await custom(page)).toEqual([{ id: "c1", name: "Good", colors: ["#111111", "#222222"] }]);
   });
 });

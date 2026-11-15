@@ -1,3 +1,5 @@
+import type { Palette } from "./palettes";
+
 /** One highlighted passage. `text` is Readmoo's original and never changes (it is used to spot
  *  duplicates on re-import); edits live in `html` (sanitised rich text) and `plain`. */
 export interface Highlight {
@@ -56,6 +58,8 @@ export interface Settings {
   blur: boolean;
   cursor: string; // a cursor id, or "system"
   withinBook: "chapter" | "newest";
+  theme: string; // a colour set's id, or "original" for the app's own random gradients
+  customPalettes: Palette[]; // the reader's own colour sets
 }
 
 export interface Filter {

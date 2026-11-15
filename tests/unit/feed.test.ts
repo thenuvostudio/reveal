@@ -3,7 +3,7 @@ import { buildPages, modeHighlights, modeValid, positionOf, rulerItems, scopedHi
 import { emptyLib, importRows } from "@/lib/library";
 import type { CsvRow, Filter, Mode, Settings } from "@/lib/types";
 
-const S: Settings = { perScroll: 1, fontSize: 72, position: "random", blur: true, cursor: "1", withinBook: "chapter" };
+const S: Settings = { perScroll: 1, fontSize: 72, position: "random", blur: true, cursor: "1", withinBook: "chapter", theme: "original", customPalettes: [] };
 const none: Filter = { folders: [], tags: [] };
 const rows = (n: number, p: string): CsvRow[] => Array.from({ length: n }, (_, i) => ({ chapter: String(i + 1), date: "2025-01-01", text: `${p}${i}`, readmooNote: "" }));
 function sample() {

@@ -290,7 +290,7 @@ test.describe("moving data from the HTML version", () => {
     await reload(page);
     await expect(page.locator("#welcome")).toBeHidden();
     await expect(pages(page)).toHaveCount(2); // 3 quotes, two to a page
-    expect(await state<unknown>(page, "s => s.settings")).toEqual({ perScroll: 2, fontSize: 60, position: "random", blur: true, cursor: "1", withinBook: "chapter" });
+    expect(await state<unknown>(page, "s => s.settings")).toEqual({ perScroll: 2, fontSize: 60, position: "random", blur: true, cursor: "1", withinBook: "chapter", theme: "original", customPalettes: [] });
     expect((await lib(page)).highlights).toHaveLength(3);
   });
 

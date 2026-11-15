@@ -3,13 +3,15 @@ import { useMemo } from "react";
 import { useApp } from "@/store/app";
 import { useFeedPos } from "@/store/feedPos";
 import { bookById, folderById, hlById } from "@/lib/library";
-import { cls, effectiveImage } from "@/lib/colors";
+import { cls, effectiveImage, rerollSeed } from "@/lib/colors";
+import { BUILTIN_PALETTES, ORIGINAL_ID, findPalette } from "@/lib/palettes";
 import { modeHighlights, positionOf } from "@/lib/feed";
 import { disp } from "@/lib/text";
 import { CURSORS } from "@/lib/cursors";
 import type { Book, Folder, Settings } from "@/lib/types";
 import { bus } from "./bus";
 import { toast } from "./toast";
+import { deletePaletteFlow, openPaletteDialog } from "./PaletteDialog";
 
 function Seg<T extends string | number>({ id, value, options, onPick }: { id: string; value: T; options: [T, string][]; onPick: (v: T) => void }) {
   return (
@@ -44,7 +46,7 @@ export default function SettingsDrawer() {
   const scale = 356 / Math.max(1, typeof window !== "undefined" ? window.innerWidth : 1440);
   const bgRow = (kind: "b" | "f", ent: Book | Folder, who: React.ReactNode) => {
     const c = kind === "b" ? "bgb-" + cls(ent.id) : "bgf-" + cls(ent.id);
-    const reroll = () => { ent.bgSeed = Math.random().toString(36).slice(2, 8); useApp.getState().commit(); };
+    const reroll = () => { ent.bgSeed = rerollSeed(kind, ent, findPalette(settings.theme, settings.customPalettes)); useApp.getState().commit(); };
     const remove = () => { delete ent.bgImage; useApp.getState().commit(); toast("Image removed"); };
     return (
       <div className="bgrow" data-kind={kind}>
@@ -95,10 +97,35 @@ export default function SettingsDrawer() {
           </div>
           <label className="field toggle"><span>Blur quotes between pages</span><input type="checkbox" id="blurT" checked={settings.blur} onChange={(e) => set({ blur: e.target.checked })} /></label>
           <div className="field">
+            <div className="lbl">Colour theme <span>{settings.theme === ORIGINAL_ID ? "a random gradient for every book" : "each book gets one colour of the set"}</span></div>
+            <div className="themegrid" id="themes">
+              <div className="themecard">
+                <button className={`themeopt ${settings.theme === ORIGINAL_ID ? "on" : ""}`} data-theme={ORIGINAL_ID} aria-pressed={settings.theme === ORIGINAL_ID} onClick={() => set({ theme: ORIGINAL_ID })}>
+                  <span className="strip"><i style={{ background: "linear-gradient(90deg,#b0406f,#7a4bb0,#2f6f9f,#1f7a6a,#a8632e)" }} /></span><span className="tn">Original</span>
+                </button>
+              </div>
+              {[...BUILTIN_PALETTES.map((p) => ({ p, custom: false })), ...settings.customPalettes.map((p) => ({ p, custom: true }))].map(({ p, custom }) => (
+                <div className="themecard" key={p.id}>
+                  <button className={`themeopt ${settings.theme === p.id ? "on" : ""}`} data-theme={p.id} aria-pressed={settings.theme === p.id} title={p.colors.join("  ")} onClick={() => set({ theme: p.id })}>
+                    <span className="strip">{p.colors.map((c, i) => <i key={i} style={{ background: c }} />)}</span><span className="tn">{p.name}</span>
+                  </button>
+                  {custom && (
+                    <span className="themeacts">
+                      <button data-theme-edit={p.id} title="Edit this set" aria-label={`Edit ${p.name}`} onClick={() => openPaletteDialog(p)}>✎</button>
+                      <button data-theme-del={p.id} title="Delete this set" aria-label={`Delete ${p.name}`} onClick={() => deletePaletteFlow(p)}>✕</button>
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button className="dbtn" data-theme-new style={{ marginTop: 8 }} onClick={() => openPaletteDialog()}>＋ New colour set</button>
+            <div className="help">A theme colours every book and folder that has no image of its own. “🎲 New colour” below moves a book to another colour of the set.</div>
+          </div>
+          <div className="field">
             <div className="lbl">Background</div>
             {b ? bgRow("b", b, <>Book · <b>{b.title}</b></>) : <div className="help">Import a book to set backgrounds.</div>}
             {f && bgRow("f", f, <>Folder · <b>{f.name}</b> <span style={{ color: "var(--ink-3)" }}>(its image shows for books in it that have no image of their own)</span></>)}
-            <div className="help">Each book and folder gets its own random gradient. Uploaded images are shrunk to about 1920px and saved in your library.</div>
+            <div className="help">Each book and folder gets its own gradient. Uploaded images are shrunk to about 1920px and saved in your library.</div>
           </div>
           <div className="field">
             <div className="lbl">Cursor</div>

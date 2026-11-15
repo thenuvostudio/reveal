@@ -14,7 +14,7 @@ Reveal is the Next.js port of the single-file `highlights.html` app (it was call
 ## Install
 
 ```bash
-npm install
+bun install
 ```
 
 ## Run it
@@ -22,17 +22,17 @@ npm install
 Development server with hot reload, on http://localhost:3000:
 
 ```bash
-npm run dev
+bun run dev
 ```
 
-Production build. The app is exported as plain static files in `out/`, which `npm start` serves on http://localhost:3000:
+Production build. The app is exported as plain static files in `out/`, which `bun run start` serves on http://localhost:3000:
 
 ```bash
-npm run build
+bun run build
 ```
 
 ```bash
-npm start
+bun run start
 ```
 
 Any static web server can host the `out/` folder. Serve it over `http://localhost` or `https://`: opening `out/index.html` straight from disk does not work.
@@ -41,29 +41,29 @@ Any static web server can host the `out/` folder. Serve it over `http://localhos
 
 | Command | What it runs |
 |---|---|
-| `npm run typecheck` | TypeScript, strict mode |
-| `npm test` | Unit tests for the logic in `lib/` (Vitest) |
-| `npm run test:e2e` | Browser tests against the static build in `out/` (Playwright) |
-| `npm run test:all` | Type check, unit tests, build, then browser tests |
+| `bun run typecheck` | TypeScript, strict mode |
+| `bun run test` | Unit tests for the logic in `lib/` (Vitest) |
+| `bun run test:e2e` | Browser tests against the static build in `out/` (Playwright) |
+| `bun run test:all` | Type check, unit tests, build, then browser tests |
 
 The browser tests need a browser once:
 
 ```bash
-npx playwright install chromium
+bunx playwright install chromium
 ```
 
 To use a Chrome you already have instead, point `CHROME_PATH` at it:
 
 ```bash
-CHROME_PATH=/usr/bin/google-chrome npm run test:e2e
+CHROME_PATH=/usr/bin/google-chrome bun run test:e2e
 ```
 
 Things to know:
 
-- `npm run test:e2e` tests whatever is in `out/`, so build first. `npm run test:all` does both.
+- `bun run test:e2e` tests whatever is in `out/`, so build first. `bun run test:all` does both.
 - Playwright starts a static server on port 4173 and reuses one that is already running. If a build fails, the old `out/` stays in place and you would be testing stale code. When in doubt, stop the old server before rebuilding: `pkill -f "[s]erve out"`.
-- Run one file with `npx playwright test ruler`, or one test with `-g "part of its name"`.
-- A failing test leaves a trace in `test-results/`. Open it with `npx playwright show-trace <path to trace.zip>`.
+- Run one file with `bunx playwright test ruler`, or one test with `-g "part of its name"`.
+- A failing test leaves a trace in `test-results/`. Open it with `bunx playwright show-trace <path to trace.zip>`.
 
 ### What the browser tests cover
 

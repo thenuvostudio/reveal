@@ -2,6 +2,7 @@
   "name": "reveal",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "bun@1.4.4",
   "description": "Review your Readmoo book highlights: full-screen quotes, a looping ruler, folders, tags, rich-text edits. Runs offline; data stays in your browser.",
   "scripts": {
     "dev": "next dev",
@@ -10,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:all": "npm run typecheck && npm run test && npm run build && npm run test:e2e"
+    "test:all": "bun run typecheck && bun run test && bun run build && bun run test:e2e"
   },
   "dependencies": {
     "next": "16.4.6",

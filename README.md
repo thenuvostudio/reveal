@@ -1,13 +1,16 @@
 # Reveal
 
+**Use it online: [thenuvostudio.github.io/reveal](https://thenuvostudio.github.io/reveal/)**
+
 A reader for your [Readmoo](https://readmoo.com) book highlights. Import Readmoo's CSV exports and review your quotes one screen at a time: a random mix, a whole book, a folder or a tag. You can edit quotes with rich text, add notes and tags, organise books into folders, and give each book its own background.
 
-Everything runs in the browser. Your library is stored on your own computer (IndexedDB), with optional auto-saving to a JSON file. Nothing is uploaded anywhere.
+Everything runs in the browser. Your library is stored on your own computer (IndexedDB), with optional auto-saving to a JSON file. Nothing is uploaded anywhere, including on the hosted site: GitHub Pages only serves the app's files and never sees your CSVs or highlights.
 
 Reveal is the Next.js port of the single-file `highlights.html` app (it was called "Highlights" until the rename). Apart from the differences listed at the end, it looks and behaves the same, and both read the same backup files.
 
 ## Requirements
 
+- [Bun](https://bun.sh) (the version is pinned in `package.json`)
 - Node.js 20 or newer (developed on Node 22)
 - For the browser tests: Playwright's Chromium, or an installed Chrome / Chromium
 
@@ -36,6 +39,15 @@ bun run start
 ```
 
 Any static web server can host the `out/` folder. Serve it over `http://localhost` or `https://`: opening `out/index.html` straight from disk does not work.
+
+## Deployment
+
+The live site at https://thenuvostudio.github.io/reveal/ is deployed by GitHub Actions ([`.github/workflows/pages.yml`](.github/workflows/pages.yml)). Every push to `main` builds the app and publishes `out/` to GitHub Pages; you can also start a run from the **Actions** tab ("Run workflow"). `out/` is not committed.
+
+- The repository's **Settings → Pages → Source** must be set to **GitHub Actions**.
+- GitHub Pages serves the app from `/reveal`, so the workflow builds with `BASE_PATH=/reveal` (taken from the repository name). `next.config.ts` uses `BASE_PATH` as Next.js's `basePath` only when it is set, so local development and hosts that serve from the domain root (Vercel, Netlify, Render) need no changes.
+- To check a Pages build locally: `BASE_PATH=/reveal bun run build`, copy `out/` into a folder named `reveal`, serve that folder's parent, and open `/reveal/`. Run `bun run build` again afterwards, because the tests expect a build without the base path.
+- Browser storage belongs to each address, so a library on the live site is separate from one on `localhost`. Use **Download backup** and **Restore** to move it.
 
 ## Tests
 

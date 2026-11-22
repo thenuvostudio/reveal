@@ -14,32 +14,6 @@ Reveal is the Next.js port of the single-file `highlights.html` app (it was call
 - Node.js 20 or newer (developed on Node 22)
 - For the browser tests: Playwright's Chromium, or an installed Chrome / Chromium
 
-## Install
-
-```bash
-bun install
-```
-
-## Run it
-
-Development server with hot reload, on http://localhost:3000:
-
-```bash
-bun run dev
-```
-
-Production build. The app is exported as plain static files in `out/`, which `bun run start` serves on http://localhost:3000:
-
-```bash
-bun run build
-```
-
-```bash
-bun run start
-```
-
-Any static web server can host the `out/` folder. Serve it over `http://localhost` or `https://`: opening `out/index.html` straight from disk does not work.
-
 ## Deployment
 
 The live site at https://thenuvostudio.github.io/reveal/ is deployed by GitHub Actions ([`.github/workflows/pages.yml`](.github/workflows/pages.yml)). Every push to `main` builds the app and publishes `out/` to GitHub Pages; you can also start a run from the **Actions** tab ("Run workflow"). `out/` is not committed.

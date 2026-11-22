@@ -1,128 +1,50 @@
 # Reveal
 
-**Use it online: [thenuvostudio.github.io/reveal](https://thenuvostudio.github.io/reveal/)**
+<div align="center" style="text-align:center">
+  <img src="public/icon.svg" alt="Reveal app icon" width="96" style="display:block;margin:0 auto">
+  <p><em>Reveal highlights. Review books.</em></p>
+  <p><a href="https://thenuvostudio.github.io/reveal/"><img src="docs/assets/try-me.svg" alt="Try me" width="148" height="44"></a></p></div>
 
-A reader for your [Readmoo](https://readmoo.com) book highlights. Import Readmoo's CSV exports and review your quotes one screen at a time: a random mix, a whole book, a folder or a tag. You can edit quotes with rich text, add notes and tags, organise books into folders, and give each book its own background.
+Reveal is a reader for your [Readmoo](https://readmoo.com) book highlights. Import Readmoo's CSV exports and review your quotes one screen at a time.
 
-Everything runs in the browser. Your library is stored on your own computer (IndexedDB), with optional auto-saving to a JSON file. Nothing is uploaded anywhere, including on the hosted site: GitHub Pages only serves the app's files and never sees your CSVs or highlights.
+- Edit quotes with rich text, and add notes and tags
+- Organise books into folders, and give each book its own background or colour theme
+- Search and filter across everything you've highlighted
+- Works on desktop, tablet and phone
 
-Reveal is the Next.js port of the single-file `highlights.html` app (it was called "Highlights" until the rename). Apart from the differences listed at the end, it looks and behaves the same, and both read the same backup files.
+## Your data stays on your device
 
-## Requirements
+Everything runs in your browser. Imported CSVs are read on your device, and your library is saved in the browser's own storage (IndexedDB). Nothing is uploaded: the website only serves the app's files and never sees your highlights.
 
-- [Bun](https://bun.sh) (the version is pinned in `package.json`)
-- Node.js 20 or newer (developed on Node 22)
-- For the browser tests: Playwright's Chromium, or an installed Chrome / Chromium
+Because of that:
 
-## Deployment
+- **Your library belongs to one browser on one device.** It doesn't sync to your phone or another browser.
+- **Clearing your browser's site data deletes it.** Keep a backup (below).
 
-The live site at https://thenuvostudio.github.io/reveal/ is deployed by GitHub Actions ([`.github/workflows/pages.yml`](.github/workflows/pages.yml)). Every push to `main` builds the app and publishes `out/` to GitHub Pages; you can also start a run from the **Actions** tab ("Run workflow"). `out/` is not committed.
+## Getting started
 
-- The repository's **Settings → Pages → Source** must be set to **GitHub Actions**.
-- GitHub Pages serves the app from `/reveal`, so the workflow builds with `BASE_PATH=/reveal` (taken from the repository name). `next.config.ts` uses `BASE_PATH` as Next.js's `basePath` only when it is set, so local development and hosts that serve from the domain root (Vercel, Netlify, Render) need no changes.
-- To check a Pages build locally: `BASE_PATH=/reveal bun run build`, copy `out/` into a folder named `reveal`, serve that folder's parent, and open `/reveal/`. Run `bun run build` again afterwards, because the tests expect a build without the base path.
-- Browser storage belongs to each address, so a library on the live site is separate from one on `localhost`. Use **Download backup** and **Restore** to move it.
+![Reveal showing three quotes on one screen with the Plants colour theme](docs/assets/three-quotes.jpg)
 
-## Tests
+1. Export your highlights from Readmoo as a CSV file, one file per book.
+2. Open Reveal and drop the CSV files onto the window, or choose **Choose CSV files**.
+3. Readmoo's CSV has no book title, so Reveal suggests one from the file name. Check or edit it in the import dialog. Choosing an existing title adds the highlights to that book.
 
-| Command | What it runs |
-|---|---|
-| `bun run typecheck` | TypeScript, strict mode |
-| `bun run test` | Unit tests for the logic in `lib/` (Vitest) |
-| `bun run test:e2e` | Browser tests against the static build in `out/` (Playwright) |
-| `bun run test:all` | Type check, unit tests, build, then browser tests |
+Importing the same file again later only adds highlights you don't already have.
 
-The browser tests need a browser once:
+## Using it
 
-```bash
-bunx playwright install chromium
-```
+![The ruler open at the bottom of Reveal, listing books, folders and tags](docs/assets/using-it-ruler.jpg)
 
-To use a Chrome you already have instead, point `CHROME_PATH` at it:
+- **Next and previous quote:** scroll, swipe, or use the arrow keys and Page Up / Page Down.
+- **Choose a book, folder or tag:** hover over (or tap) the bookmark tab at the bottom to open the ruler, then scroll or swipe to an item. Press <kbd>B</kbd> to open it from the keyboard and <kbd>Esc</kbd> to close it.
+- **Random mix and All:** use the dice and the All button in the top bar.
+- **Library:** click the app icon to manage books and folders, rename, move, delete, and make backups.
+- **Settings:** quotes per scroll, font size, text position, order, blur, backgrounds, cursor and colour theme.
 
-```bash
-CHROME_PATH=/usr/bin/google-chrome bun run test:e2e
-```
+## Backups
 
-Things to know:
+- **Download a backup:** Library → **Download backup (.json)**. Settings such as font size and theme are not included.
+- **Restore:** drop the `.json` file onto the window, or Library → **Restore or merge from backup…**. Choose **Merge into current** to add only what's missing, or **Replace everything**.
+- **Auto-save to a file (Chrome and Edge):** Library → **Open library file…** links a JSON file on your computer, which Reveal rewrites after every change. The dot on the app icon is green while it's saving and orange when the browser needs your permission again. This also works from **…or open an existing library file** on the welcome screen, which keeps saving to that file, so don't use it on a backup you want to keep unchanged.
 
-- `bun run test:e2e` tests whatever is in `out/`, so build first. `bun run test:all` does both.
-- Playwright starts a static server on port 4173 and reuses one that is already running. If a build fails, the old `out/` stays in place and you would be testing stale code. When in doubt, stop the old server before rebuilding: `pkill -f "[s]erve out"`.
-- Run one file with `bunx playwright test ruler`, or one test with `-g "part of its name"`.
-- A failing test leaves a trace in `test-results/`. Open it with `bunx playwright show-trace <path to trace.zip>`.
-
-### What the browser tests cover
-
-| Spec | Covers |
-|---|---|
-| `import.spec.ts` | Welcome screen, CSV import dialog, duplicates, drag-and-drop of files |
-| `feed.spec.ts` | Random mix, quote fitting, paging keys, blur, progress label, selecting quotes |
-| `editing.spec.ts` | Every editor toolbar button, save / cancel / revert, paste, notes, tags, copy, delete |
-| `ruler.spec.ts` | Opening and closing, wheel, keys, clicks, the settle delay, looping, empty items |
-| `topbar-filter.spec.ts` | Search, dice, All, the filter panel, layout at 1440 / 1024 / 600 / 390 px |
-| `settings.spec.ts` | Quotes per scroll, font size, position, order, blur, backgrounds, cursors, preview, colour themes and custom sets |
-| `library.spec.ts` | Drawer, folders, drag-and-drop, every ⋯ menu item, backup / restore, linked file |
-| `persistence.spec.ts` | What survives a reload, and moving data to and from the HTML version |
-| `phone.spec.ts` | Pixel 7: layout, logo, search, ruler tap and swipe, the docked quote actions |
-
-`phone.spec.ts` runs in the `phone` project; all other specs run in the `desktop` project (1440×900).
-
-The tests use fixtures in `tests/fixtures/`: two Readmoo CSV exports, a sample library (`library-sample.json`: 63 highlights, 3 books, 2 folders) and a background image. File pickers are replaced by a fake File System Access API (`installFakeFs` in `tests/e2e/helpers.ts`), so linking and auto-saving to a file can be tested without a native dialog.
-
-## Moving your data from the HTML version
-
-The backup format is the same in both versions, so data moves in either direction.
-
-1. In `highlights.html`, open the Library (click the app icon) and choose **Download backup (.json)**.
-2. In this app, drop that `.json` file onto the window. Or open the Library and choose **Restore or merge from backup…**, then pick the file.
-3. If this app already has highlights, choose **Merge into current** (adds what is missing, never duplicates) or **Replace everything**.
-
-To go back, do the same the other way round: **Download backup** here, **Restore** there.
-
-Notes:
-
-- Both versions use the same IndexedDB database name (`readmoo-highlights`), but browser storage is separate for each address. `http://localhost:3000` cannot see what a `file://` page stored, so the backup file is the way to move.
-- Settings (font size, cursor and so on) are not part of the backup. Set them again in Settings.
-- A library file linked for auto-saving has to be linked again in this app: **Library → Open library file…** (Chrome or Edge). The same goes for **…or open an existing library file** on the welcome screen: it opens the file *and* keeps saving to it, so don't use it on a backup you want to keep unchanged.
-
-## Where your data lives
-
-- **Library** (books, highlights, folders, notes, tags, edits, background images): IndexedDB database `readmoo-highlights`, store `kv`, key `library`. Saved 0.3 s after each change, and immediately when the tab is closed or hidden.
-- **Settings**: same store, key `settings`.
-- **Linked file** (optional, Chrome and Edge): the same JSON as a backup, rewritten after every change. The dot on the app icon is green while it is saving and orange when the browser needs your permission again.
-- **Backup file**: `{ app: "readmoo-highlights", version: 1, exportedAt, folders, books, highlights }`.
-
-The search, the filter and the mode you were in are not saved. The app always opens with a fresh random mix.
-
-## Project layout
-
-```
-app/          Next.js App Router shell and the global stylesheet
-components/   The UI: App, Feed, Ruler, TopBar, FilterPanel, drawers, dialogs, editors
-lib/          Pure logic, unit-tested: CSV parsing, library operations, feed order, exporters, rich text
-store/        zustand stores: app state (store/app.ts) and the reader's position (store/feedPos.ts)
-tests/unit/   Vitest tests for lib/
-tests/e2e/    Playwright specs and helpers
-tests/fixtures/  Sample CSVs, a sample library and an image
-```
-
-The app is client-only (`dynamic(() => import("./App"), { ssr: false })`) and builds with `output: "export"`. Stack: Next.js 16, React 19, TypeScript (strict), zustand.
-
-For debugging, the zustand store is available in the browser console as `window.__reveal`.
-
-## Known limits
-
-- **Very long quotes at 4 per scroll.** A quote shrinks to fit its space, but never below 14 px. With 4 quotes per scroll on a short window, a quote of five or more lines can still overflow its slot. Use fewer quotes per scroll, or a taller window.
-- **Reopening the ruler from the same spot.** After the ruler closes, moving the mouse back onto the tab within 6 px of where it left does not reopen it (this guard stops the tab from reopening itself as it slides back under the pointer). Move the mouse a little more, or press <kbd>B</kbd>.
-- **Readmoo truncates long highlights** in its CSV export. Those quotes are marked "truncated by Readmoo".
-- **Auto-saving to a file** needs the File System Access API (Chrome, Edge). Other browsers can still download and restore backups.
-
-The first two behave the same in the HTML version.
-
-## Differences from the HTML version
-
-- **Name.** The app is called Reveal. Backups download as `reveal-backup-<date>.json` and a newly linked file is suggested as `reveal-library.json`. Two internal names are kept on purpose so existing data keeps working: the IndexedDB database `readmoo-highlights` and the `app: "readmoo-highlights"` field inside backup files.
-- **Colour themes.** Settings → Colour theme offers seven sets of natural colours (Paper and cloth, Earth, Wood, Stone, Plants, Water and sky, Accents) next to "Original", the random gradients, which stays the default. With a set chosen, every book and folder without an image of its own gets one colour of the set, blended with its neighbours in the set. You can add sets of your own (2 to 6 colours), and edit or delete them. Pale colours are deepened just enough for the white text to stay readable (at least 4.5:1 contrast), so a pale set looks deeper on the page than on its card. The built-in sets are in `lib/palettes.ts`; the theme and your own sets are stored with the settings, in this browser only, and are not part of a backup.
-- **The ruler lists only folders, books and tags.** Random and All are not on it; use the dice and the All button in the top bar. While the random mix, All or a search is showing, the needle rests on an item without loading it; scroll to another item, or click the one under the needle, to open it.
-
-- **Touch screens: tapping the bookmark tab opens the ruler.** In the HTML version a tap opened the ruler and closed it again at once, because the browser reports a tap as "mouse enters, click, mouse leaves". Here only a real mouse opens the ruler by hovering; a finger's tap toggles it.
+Use a backup to move your library to another browser or device.

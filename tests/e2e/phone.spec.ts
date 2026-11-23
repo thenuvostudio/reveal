@@ -1,8 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import { dialog, expectPage, modeLabel, rulerLabels, seed, state } from "./helpers";
+import { drawerColors } from "../../lib/palettes";
 
 // Runs in the "phone" project only (Pixel 7: 412 px wide, touch, no hover).
+// Phones start with two quotes per scroll, so 63 highlights make 32 pages.
 const pages = (page: Page) => page.locator(".page[data-pi]");
+const quotes = (page: Page) => page.locator(".slot[data-id]");
 const ruler = (page: Page) => page.locator("#ruler");
 const cur = (page: Page) => page.locator("#tape .tick.cur .lb");
 
@@ -16,12 +20,13 @@ async function swipe(page: Page, from: { x: number; y: number }, dx: number) {
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   await cdp.detach();
 }
-/** A vertical swipe on the feed. */
+/** A vertical swipe on the feed, past half the screen's height: the snap then goes to the next page however slow
+ *  the gesture comes out (a shorter swipe only gets there with enough speed, which a busy test machine may not give it). */
 async function swipeUp(page: Page) {
   const cdp = await page.context().newCDPSession(page);
   const point = (y: number) => [{ x: 200, y, id: 1 }];
-  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: point(600) });
-  for (let i = 1; i <= 10; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: point(600 - i * 40) });
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: point(700) });
+  for (let i = 1; i <= 10; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: point(700 - i * 55) });
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   await cdp.detach();
 }
@@ -51,7 +56,7 @@ test.describe("phone layout", () => {
     // no sideways scrolling, and the quote stays inside the screen
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.tap("#allBtn");
-    for (const i of [0, 20, 40, 62]) {
+    for (const i of [0, 10, 20, 31]) {
       await page.evaluate((n) => { const f = document.getElementById("feed")!; f.scrollTop = n * f.clientHeight; }, i);
       await expectPage(page, i);
       await expect.poll(() => page.evaluate(() => {
@@ -71,6 +76,28 @@ test.describe("phone layout", () => {
     await expectPage(page, 1);
   });
 
+  test("phones start with 32 px quotes, two per scroll", async ({ page }) => {
+    await seed(page);
+    expect(await state<number>(page, "s => s.settings.fontSize")).toBe(32);
+    expect(await state<number>(page, "s => s.settings.perScroll")).toBe(2);
+    await expect(pages(page)).toHaveCount(32);
+    await expect(pages(page).first().locator(".slot[data-id]")).toHaveCount(2);
+    await page.tap("#setBtn");
+    await expect(page.locator("#fsLbl")).toHaveText("32px");
+  });
+
+  test("a quotes-per-scroll choice made in Settings survives a reload", async ({ page }) => {
+    await seed(page);
+    await page.tap("#setBtn");
+    await page.tap("#segN [data-v='1']");
+    await expect(pages(page)).toHaveCount(63);
+    await page.reload();
+    await expect(page.locator(".page[data-pi]").first()).toBeVisible();
+    await expect(pages(page)).toHaveCount(63);
+    expect(await state<number>(page, "s => s.settings.perScroll")).toBe(1);
+    expect(await state<number>(page, "s => s.settings.fontSize")).toBe(32);
+  });
+
   test("the drawers fill the screen and close again", async ({ page }) => {
     await seed(page);
     await page.tap("#setBtn");
@@ -78,6 +105,8 @@ test.describe("phone layout", () => {
     await expect(settings).toHaveClass(/open/);
     const vw = page.viewportSize()!.width;
     await expect.poll(async () => { const b = (await settings.boundingBox())!; return b.x >= 0 && b.x + b.width <= vw + 0.5 && b.width >= Math.min(400, vw) - 0.5; }).toBe(true);
+    await page.tap("#segN [data-v='1']");
+    await expect(pages(page)).toHaveCount(63);
     await page.tap("#segN [data-v='2']");
     await expect(pages(page)).toHaveCount(32);
     await settings.locator("[data-close]").tap();
@@ -94,7 +123,8 @@ test.describe("phone: logo", () => {
     await expect(lib.locator(".lsec").first()).toContainText("Books · 3");
     await lib.locator(".lrow[data-kind='book'][data-id='bC'] .t").tap();
     await expect(lib).not.toHaveClass(/open/);
-    await expect(pages(page)).toHaveCount(3);
+    await expect(quotes(page)).toHaveCount(3);
+    await expect(pages(page)).toHaveCount(2);
     await expect(page.getByTestId("progress")).toHaveText("Book C");
     await page.tap("#brandBtn");
     await lib.locator("[data-close]").tap();
@@ -124,7 +154,7 @@ test.describe("phone: search", () => {
 
     await page.tap("#sclear");
     await expect(page.locator("#search")).toHaveValue("");
-    await expect(pages(page)).toHaveCount(63);
+    await expect(quotes(page)).toHaveCount(63);
     await page.locator("#search").blur();
     await expect(page.locator("#top")).not.toHaveClass(/sopen/);
     await expect(page.locator("#searchBtn")).toBeVisible();
@@ -199,9 +229,19 @@ test.describe("phone: quote actions", () => {
     await expect(qa).toBeVisible();
     await qa.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
   };
+  /** One quote per scroll at 72 px (the desktop defaults), so a long quote fills the screen. */
+  const bigQuotes = async (page: Page) => {
+    await page.tap("#setBtn");
+    await page.tap("#segN [data-v='1']");
+    await page.locator("#fs").fill("72");
+    await expect(page.locator("#fsLbl")).toHaveText("72px");
+    await page.locator("#settings [data-close]").tap();
+    await expect(page.locator("#settings")).not.toHaveClass(/open/);
+  };
 
   test("a long quote leaves no room, so its actions dock above the bottom bar", async ({ page }) => {
     await seed(page);
+    await bigQuotes(page);
     await page.tap("#searchBtn");
     await page.fill("#search", "如何早日脫離低谷"); // the longest quote in the sample
     await expect(pages(page)).toHaveCount(1);
@@ -228,6 +268,7 @@ test.describe("phone: quote actions", () => {
 
   test("the docked actions work by touch: note, tag and delete", async ({ page }) => {
     await seed(page);
+    await bigQuotes(page);
     await page.tap("#searchBtn");
     await page.fill("#search", "如何早日脫離低谷");
     await expect(pages(page)).toHaveCount(1);
@@ -258,4 +299,52 @@ test.describe("phone: quote actions", () => {
     await dialog(page).locator("[data-ok]").tap();
     expect(await state<number>(page, "s => s.lib.highlights.length")).toBe(62);
   });
+});
+
+test.describe("phone: full-screen drawers", () => {
+  const DRAWERS = [
+    { id: "settings", open: "#setBtn", set: "stone" },
+    { id: "library", open: "#brandBtn", set: "plants" },
+  ] as const;
+  const rulerTab = (page: Page) => page.getByRole("button", { name: "Choose a book, folder or tag" });
+
+  for (const d of DRAWERS) {
+    test(`${d.id} covers the whole screen, hides the ruler tab and closes again`, async ({ page }) => {
+      await seed(page);
+      await expect(rulerTab(page)).toBeVisible();
+      await page.tap(d.open);
+      const drawer = page.locator(`#${d.id}`);
+      await expect(drawer).toHaveClass(/open/);
+      const vp = page.viewportSize()!;
+      await expect.poll(async () => { const b = (await drawer.boundingBox())!; return [b.x, b.y, b.width, b.height].map(Math.round); }).toEqual([0, 0, vp.width, vp.height]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      expect(await page.evaluate(() => getComputedStyle(document.getElementById("feed")!).overflowY)).toBe("hidden"); // the page behind can't scroll
+      // the ruler tab is gone: not shown, out of the accessibility tree, not focusable, not tappable
+      await expect(rulerTab(page)).toHaveCount(0);
+      await expect(page.locator("#bm")).toBeHidden();
+      expect(await page.evaluate(() => { const b = document.getElementById("bm")!; b.focus(); return document.activeElement === b; })).toBe(false);
+      // the close button is on screen and big enough to tap
+      const x = (await drawer.locator("[data-close]").boundingBox())!;
+      expect(x.x + x.width).toBeLessThanOrEqual(vp.width);
+      expect(x.y).toBeGreaterThanOrEqual(0);
+      expect(Math.min(x.width, x.height)).toBeGreaterThanOrEqual(44);
+      await drawer.locator("[data-close]").tap();
+      await expect(drawer).not.toHaveClass(/open/);
+      await expect(rulerTab(page)).toBeVisible();
+      expect(await page.evaluate(() => getComputedStyle(document.getElementById("feed")!).overflowY)).not.toBe("hidden");
+    });
+
+    test(`${d.id} is coloured from the "${d.set}" set and its text passes colour contrast`, async ({ page }) => {
+      await seed(page);
+      await page.tap(d.open);
+      const drawer = page.locator(`#${d.id}`);
+      await expect(drawer).toHaveClass(/open/);
+      await drawer.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+      const c = drawerColors(d.set);
+      const got = await drawer.evaluate((el) => { const s = getComputedStyle(el); return ["--paper", "--ink", "--ink-2", "--ink-3", "--accent"].map((v) => s.getPropertyValue(v).trim()); });
+      expect(got).toEqual([c.paper, c.ink, c.ink2, c.ink3, c.accent]);
+      const results = await new AxeBuilder({ page }).include(`#${d.id}`).withRules(["color-contrast"]).analyze();
+      expect(results.violations.flatMap((v) => v.nodes.map((n) => `${n.target.join(" ")}: ${n.failureSummary}`))).toEqual([]);
+    });
+  }
 });

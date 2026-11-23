@@ -1,10 +1,10 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useApp } from "@/store/app";
 import { useFeedPos } from "@/store/feedPos";
 import { bookById, folderById, hlById } from "@/lib/library";
 import { cls, effectiveImage, rerollSeed } from "@/lib/colors";
-import { BUILTIN_PALETTES, ORIGINAL_ID, findPalette } from "@/lib/palettes";
+import { BUILTIN_PALETTES, ORIGINAL_ID, drawerVars, findPalette } from "@/lib/palettes";
 import { modeHighlights, positionOf } from "@/lib/feed";
 import { disp } from "@/lib/text";
 import { CURSORS } from "@/lib/cursors";
@@ -12,6 +12,10 @@ import type { Book, Folder, Settings } from "@/lib/types";
 import { bus } from "./bus";
 import { toast } from "./toast";
 import { deletePaletteFlow, openPaletteDialog } from "./PaletteDialog";
+import { useDrawerFocus } from "./useDrawerFocus";
+
+/** On phones the full-screen Settings drawer is tinted with the "Stone" set (see the phone block in globals.css). */
+const PHONE_COLORS = drawerVars("stone");
 
 function Seg<T extends string | number>({ id, value, options, onPick }: { id: string; value: T; options: [T, string][]; onPick: (v: T) => void }) {
   return (
@@ -23,6 +27,8 @@ function Seg<T extends string | number>({ id, value, options, onPick }: { id: st
 
 export default function SettingsDrawer() {
   const open = useApp((s) => s.drawer === "settings");
+  const asideRef = useRef<HTMLElement>(null);
+  useDrawerFocus(open, asideRef, "#setBtn");
   const settings = useApp((s) => s.settings);
   const lib = useApp((s) => s.lib);
   const version = useApp((s) => s.version);
@@ -60,7 +66,7 @@ export default function SettingsDrawer() {
   };
 
   return (
-    <aside className={`drawer right ${open ? "open" : ""}`} id="settings" aria-label="Settings" aria-hidden={!open} data-testid="settings">
+    <aside className={`drawer right ${open ? "open" : ""}`} id="settings" ref={asideRef} inert={!open} style={PHONE_COLORS} aria-label="Settings" aria-hidden={!open} data-testid="settings">
       <div className="dh"><h2>Settings</h2><button className="x" data-close aria-label="Close settings" onClick={() => useApp.getState().setDrawer(null)}>×</button></div>
       {open && (
         <div className="db" id="setBody">

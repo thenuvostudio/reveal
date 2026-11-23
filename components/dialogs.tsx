@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { create } from "zustand";
 
 /** A dialog is any React node; it gets a `close` function. Dialogs stack; Esc / backdrop closes the top one. */
@@ -37,11 +37,23 @@ export function DialogHost() {
     <>
       {list.map((d) => (
         <div key={d.id} className="overlay" data-testid="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) d.close(); }}>
-          <div className={`modal ${d.wide ? "wide" : ""}`} role="dialog" aria-modal="true">{d.node()}</div>
+          <Modal entry={d} />
         </div>
       ))}
     </>
   );
+}
+
+/** One dialog box. Screen readers announce it by its heading: the first h2/h3 inside gets an id and the box points at it. */
+function Modal({ entry: d }: { entry: DialogEntry }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const box = ref.current, h = box?.querySelector("h2, h3");
+    if (!box || !h) return;
+    if (!h.id) h.id = `dlg-title-${d.id}`;
+    if (box.getAttribute("aria-labelledby") !== h.id) box.setAttribute("aria-labelledby", h.id);
+  });
+  return <div ref={ref} className={`modal ${d.wide ? "wide" : ""}`} role="dialog" aria-modal="true">{d.node()}</div>;
 }
 
 export function confirmBox(title: string, body: ReactNode, okLabel = "OK", danger = false): Promise<boolean> {

@@ -85,13 +85,15 @@ export default function TopBar() {
 
   return (
     <header className={cls} id="top" ref={topRef} style={{ ["--sw" as string]: layout.w + "px" }}>
-      <div className="brand" id="brandBtn" ref={brandRef} role="button" tabIndex={0} title={brandTitle} aria-label="Open library"
+      <div className="brand" id="brandBtn" ref={brandRef} role="button" tabIndex={0} title={brandTitle} aria-label="Reveal: open library"
         onClick={toggleLibrary} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleLibrary(); } }}>
         <span className="logowrap"><img src={ICON} alt="" className="logo" /><span className={`dot ${dot}`} id="fileDot" data-testid="file-dot" /></span>
         <span className="name">Reveal.</span>
       </div>
       <div className="centerbar" id="centerBar">
-        <button className="chip" id="searchBtn" title="Search (/)" aria-label="Search" onClick={() => { setSopen(true); setTimeout(() => inputRef.current?.focus(), 0); }}>⌕</button>
+        <button className="bare" id="searchBtn" title="Search (/)" aria-label="Search" onClick={() => { setSopen(true); setTimeout(() => inputRef.current?.focus(), 0); }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeLinecap="round"><circle cx="10.2" cy="10.2" r="6.9" strokeWidth="3.2" /><path d="m15.6 15.6 5.6 5.6" strokeWidth="3.6" /></svg>
+        </button>
         <div className="searchwrap" id="searchWrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
           <input className="searchbox" id="search" ref={inputRef} type="search" placeholder="Search highlights, notes, tags…  ( / )" autoComplete="off" aria-label="Search"

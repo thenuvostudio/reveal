@@ -44,7 +44,7 @@ export async function seed(page: Page) {
   await expect(page.locator("#welcome")).toBeVisible();
   await page.setInputFiles("#jsonInput", SAMPLE);
   await expect(page.locator(".page[data-pi]").first()).toBeVisible();
-  await expect(page.locator(".page[data-pi]")).toHaveCount(63);
+  await expect(page.locator(".slot[data-id]")).toHaveCount(63); // 63 pages on desktop; fewer on phones, which show two per scroll
 }
 
 /** Imports both sample CSVs with proper titles through the import dialog. */

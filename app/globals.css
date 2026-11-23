@@ -389,5 +389,18 @@ body.dragging::after{content:"Drop CSV files to import";position:fixed;inset:12p
   .page{padding:80px 7vw calc(var(--barH) + 30px)}
   .qwrap,.slot.center .qwrap{max-width:100%}
   .progress{max-width:34vw}
+  /* Settings and Library cover the whole screen (100dvh so the browser's toolbar can't cut them off),
+     padded clear of notches and the home indicator. */
+  .drawer{top:0;bottom:auto;left:0;right:0;width:100%;height:100vh;height:100dvh;box-shadow:none !important;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  .db{overscroll-behavior:contain}
+  .dh .x{min-width:44px;min-height:44px;margin-right:-10px;font-size:28px}
+  /* the feed behind doesn't scroll, and the ruler tab is gone (not shown, not tappable, not focusable) while one is open */
+  body:has(.drawer.open) #feed{overflow:hidden}
+  body:has(.drawer.open) .bm{visibility:hidden}
+  /* tinted from the built-in sets (Plants for Library, Stone for Settings); the colours come from lib/palettes.ts drawerVars() */
+  #library,#settings{--paper:var(--m-paper);--paper-2:var(--m-paper-2);--card:var(--m-card);--pline:var(--m-pline);--accent-soft:var(--m-accent-soft);
+    --ink:var(--m-ink);--ink-2:var(--m-ink-2);--ink-3:var(--m-ink-3);--accent:var(--m-accent);
+    background:linear-gradient(180deg,var(--m-paper),var(--m-paper-end))}
 }
 @media (prefers-reduced-motion:reduce){ .tape.anim,.bm,.ruler,.drawer{transition:none} }

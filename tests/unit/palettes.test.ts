@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUILTIN_PALETTES, MAX_LUMINANCE, ORIGINAL_ID, allPalettes, findPalette, isBuiltin, luminance, normalizeHex, toHex, toRgb, toned, validPalettes } from "@/lib/palettes";
+import { BUILTIN_PALETTES, MAX_LUMINANCE, contrast, drawerColors, ORIGINAL_ID, allPalettes, findPalette, isBuiltin, luminance, normalizeHex, toHex, toRgb, toned, validPalettes } from "@/lib/palettes";
 import { bgStyles, gradOf, paletteGradient, paletteIndex, rerollSeed } from "@/lib/colors";
 import { emptyLib } from "@/lib/library";
 
@@ -122,5 +122,17 @@ describe("custom sets read from storage", () => {
   it("never keeps more than six colours", () => {
     const many = Array.from({ length: 9 }, (_, i) => `#${i}${i}${i}${i}${i}${i}`);
     expect(validPalettes([{ id: "c1", name: "Many", colors: many }])[0].colors).toHaveLength(6);
+  });
+});
+
+describe("drawer colours on phones", () => {
+  it("are tinted from the set, and every text colour reads at 4.5:1 on every surface", () => {
+    for (const id of ["plants", "stone"]) {
+      const c = drawerColors(id);
+      const surfaces = [c.card, c.paper, c.paperEnd, c.paper2, c.accentSoft].map(toRgb);
+      for (const fg of [c.ink, c.ink2, c.ink3, c.accent]) for (const bg of surfaces) expect(contrast(toRgb(fg), bg), `${id} ${fg}`).toBeGreaterThanOrEqual(4.5);
+    }
+    expect(drawerColors("plants").ink2).toBe("#3f5346"); // pine, already dark enough, is used as it is
+    expect(() => drawerColors("nope")).toThrow();
   });
 });

@@ -380,6 +380,6 @@ test.describe("layout", () => {
     await page.locator("#search").blur(); // with text it stays open
     await expect(page.locator("#searchWrap")).toBeVisible();
     await page.click("#sclear");
-    await expect(page.locator(".page[data-pi]")).toHaveCount(63);
+    await expect(page.locator(".slot[data-id]")).toHaveCount(63); // every quote is back (390 px loads with the phone default of two per page)
   });
 });

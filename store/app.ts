@@ -8,6 +8,14 @@ import { CURSORS } from "@/lib/cursors";
 import { ORIGINAL_ID, findPalette, validPalettes } from "@/lib/palettes";
 
 export const DEFAULT_SETTINGS: Settings = { perScroll: 1, fontSize: 72, position: "random", blur: true, cursor: "1", withinBook: "chapter", theme: ORIGINAL_ID, customPalettes: [] };
+/** Phones (the same 760 px breakpoint as the CSS) start with smaller quote text, two quotes per scroll. */
+export const MOBILE_FONT_SIZE = 32;
+export const MOBILE_PER_SCROLL = 2;
+export const MOBILE_QUERY = "(max-width: 760px)";
+export const defaultSettings = (): Settings => {
+  const mobile = typeof window !== "undefined" && window.matchMedia?.(MOBILE_QUERY).matches;
+  return { ...DEFAULT_SETTINGS, ...(mobile ? { fontSize: MOBILE_FONT_SIZE, perScroll: MOBILE_PER_SCROLL } : {}) };
+};
 const EMPTY_FILTER: Filter = { folders: [], tags: [] };
 
 /** What the feed should do with the reader's place after the next change. */
@@ -105,7 +113,7 @@ export const useApp = create<AppState>()((set, get) => {
     storageError: null,
     lib: emptyLib(),
     version: 0,
-    settings: { ...DEFAULT_SETTINGS },
+    settings: defaultSettings(),
     mode: { type: "random", id: null, seed: newSeed() },
     query: "",
     modeBeforeSearch: null,
@@ -119,7 +127,7 @@ export const useApp = create<AppState>()((set, get) => {
     async init() {
       try {
         const st = await kvGet<Partial<Settings>>("settings");
-        const settings = { ...DEFAULT_SETTINGS, ...(st || {}) } as Settings;
+        const settings = { ...defaultSettings(), ...(st || {}) } as Settings;
         if (!CURSORS.some((c) => c.id === settings.cursor) && settings.cursor !== "system") settings.cursor = DEFAULT_SETTINGS.cursor;
         settings.customPalettes = validPalettes(settings.customPalettes);
         if (typeof settings.theme !== "string" || !findPalette(settings.theme, settings.customPalettes)) settings.theme = ORIGINAL_ID;

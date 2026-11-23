@@ -69,3 +69,46 @@ export function toned(hex: string): RGB {
   for (let i = 0; i < 60 && luminance(c) > MAX_LUMINANCE; i++) c = c.map((v) => v * 0.96) as RGB;
   return c.map(Math.floor) as RGB; // whole numbers, rounded down, so the colour as written in CSS is still under the limit
 }
+
+/* ---------- drawer colours on phones ---------- */
+
+/** WCAG contrast ratio between two colours (1 to 21). */
+export function contrast(a: RGB, b: RGB): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+/** Darkens a text colour towards black until it reaches `ratio` against every background given. */
+export function readableOn(c: RGB, backgrounds: RGB[], ratio = 4.5): RGB {
+  let out = c;
+  for (let i = 0; i < 100 && backgrounds.some((b) => contrast(out, b) < ratio); i++) out = out.map((v) => v * 0.96) as RGB;
+  return out.map(Math.floor) as RGB;
+}
+
+/** The light-surface colours (the --paper / --ink / --accent tokens) for a drawer tinted with one built-in set:
+ *  pale tints of its lightest colour for the surfaces, its darker colours for text and accents,
+ *  each darkened as needed so every text colour has 4.5:1 contrast on every surface it can sit on. */
+export function drawerColors(paletteId: string) {
+  const p = BUILTIN_PALETTES.find((x) => x.id === paletteId);
+  if (!p) throw new Error(`no built-in colour set "${paletteId}"`);
+  const byLum = p.colors.map(toRgb).sort((a, b) => luminance(b) - luminance(a)); // lightest first
+  const light = byLum[0], mid = byLum[Math.floor((byLum.length - 1) / 2)], dark = byLum[byLum.length - 1];
+  const white: RGB = [255, 255, 255];
+  const paper = mix(light, white, 0.8), paperEnd = mix(light, white, 0.62), paper2 = mix(light, white, 0.5);
+  const accentSoft = mix(mid, white, 0.72), pline = mix(mid, white, 0.6);
+  const surfaces = [white, paper, paperEnd, paper2, accentSoft];
+  return {
+    paper: toHex(paper), paperEnd: toHex(paperEnd), paper2: toHex(paper2), card: toHex(white), pline: toHex(pline), accentSoft: toHex(accentSoft),
+    ink: toHex(readableOn(mix(dark, [0, 0, 0], 0.35), surfaces, 7)),
+    ink2: toHex(readableOn(dark, surfaces)),
+    ink3: toHex(readableOn(mid, surfaces)),
+    accent: toHex(readableOn(byLum.length > 3 ? byLum[byLum.length - 2] : mid, surfaces)),
+  };
+}
+/** The same colours as CSS custom properties, for a drawer's style attribute (the phone stylesheet reads them). */
+export function drawerVars(paletteId: string): Record<string, string> {
+  const c = drawerColors(paletteId);
+  return {
+    "--m-paper": c.paper, "--m-paper-end": c.paperEnd, "--m-paper-2": c.paper2, "--m-card": c.card, "--m-pline": c.pline,
+    "--m-accent-soft": c.accentSoft, "--m-ink": c.ink, "--m-ink-2": c.ink2, "--m-ink-3": c.ink3, "--m-accent": c.accent,
+  };
+}

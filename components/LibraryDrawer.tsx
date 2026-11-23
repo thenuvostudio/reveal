@@ -6,6 +6,11 @@ import { cls } from "@/lib/colors";
 import { bus } from "./bus";
 import { toast } from "./toast";
 import * as A from "./libraryActions";
+import { drawerVars } from "@/lib/palettes";
+import { useDrawerFocus } from "./useDrawerFocus";
+
+/** On phones the full-screen Library drawer is tinted with the "Plants" set (see the phone block in globals.css). */
+const PHONE_COLORS = drawerVars("plants");
 
 interface MenuItem { label: string; run: () => void; danger?: boolean }
 type Menu = { x: number; y: number; items: (MenuItem | "-")[] } | null;
@@ -21,6 +26,8 @@ export default function LibraryDrawer() {
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const asideRef = useRef<HTMLElement>(null);
+  useDrawerFocus(open, asideRef, "#brandBtn");
   void version;
 
   useEffect(() => {
@@ -117,7 +124,7 @@ export default function LibraryDrawer() {
     : (fsSupported() ? "Link your library to a .json file (for example next to this app, or in Dropbox) to carry it anywhere." : "Download a backup to move your library to another computer. Auto-saving to a file needs Chrome or Edge.");
 
   return (
-    <aside className={`drawer left ${open ? "open" : ""}`} id="library" aria-label="Library" aria-hidden={!open} data-testid="library">
+    <aside className={`drawer left ${open ? "open" : ""}`} id="library" ref={asideRef} inert={!open} style={PHONE_COLORS} aria-label="Library" aria-hidden={!open} data-testid="library">
       <div className="dh"><h2>Library</h2><button className="x" data-close aria-label="Close library" onClick={() => useApp.getState().setDrawer(null)}>×</button></div>
       {open && (
         <div className="db" id="libBody">
